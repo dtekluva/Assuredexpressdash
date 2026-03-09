@@ -1,0 +1,2715 @@
+openapi: 3.0.3
+info:
+  title: Assured Express Logistics API
+  version: 1.0.0
+  description: Operations Command Center — Riders, Merchants, Zones, Communications
+paths:
+  /api/v1/auth/change-password/:
+    post:
+      operationId: v1_auth_change_password_create
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/fcm-token/:
+    post:
+      operationId: v1_auth_fcm_token_create
+      description: Riders call this on app launch to register their push token.
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/login/:
+    post:
+      operationId: v1_auth_login_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomTokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CustomTokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CustomTokenObtainPair'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomTokenObtainPair'
+          description: ''
+  /api/v1/auth/logout/:
+    post:
+      operationId: v1_auth_logout_create
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/profile/:
+    get:
+      operationId: v1_auth_profile_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+    put:
+      operationId: v1_auth_profile_update
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+    patch:
+      operationId: v1_auth_profile_partial_update
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfile'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+  /api/v1/auth/token/refresh/:
+    post:
+      operationId: v1_auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/comms/broadcasts/:
+    get:
+      operationId: v1_comms_broadcasts_list
+      description: Create and manage broadcast sends.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBroadcastListList'
+          description: ''
+    post:
+      operationId: v1_comms_broadcasts_create
+      description: Create and manage broadcast sends.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BroadcastCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BroadcastCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BroadcastCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BroadcastCreate'
+          description: ''
+  /api/v1/comms/broadcasts/{id}/:
+    get:
+      operationId: v1_comms_broadcasts_retrieve
+      description: Create and manage broadcast sends.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BroadcastDetail'
+          description: ''
+    put:
+      operationId: v1_comms_broadcasts_update
+      description: Create and manage broadcast sends.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BroadcastCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BroadcastCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BroadcastCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BroadcastCreate'
+          description: ''
+    patch:
+      operationId: v1_comms_broadcasts_partial_update
+      description: Create and manage broadcast sends.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBroadcastCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBroadcastCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBroadcastCreate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BroadcastCreate'
+          description: ''
+    delete:
+      operationId: v1_comms_broadcasts_destroy
+      description: Create and manage broadcast sends.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/comms/broadcasts/{id}/deliveries/:
+    get:
+      operationId: v1_comms_broadcasts_deliveries_retrieve
+      description: Create and manage broadcast sends.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BroadcastList'
+          description: ''
+  /api/v1/comms/broadcasts/{id}/send/:
+    post:
+      operationId: v1_comms_broadcasts_send_create
+      description: Trigger async delivery of a draft or scheduled broadcast.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BroadcastList'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BroadcastList'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BroadcastList'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BroadcastList'
+          description: ''
+  /api/v1/comms/notifications/:
+    get:
+      operationId: v1_comms_notifications_list
+      description: |-
+        GET /api/v1/comms/notifications/
+        Returns the calling rider's in-app notifications.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRiderNotificationList'
+          description: ''
+  /api/v1/comms/notifications/{id}/read/:
+    post:
+      operationId: v1_comms_notifications_read_create
+      description: POST /api/v1/comms/notifications/{id}/read/
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/comms/templates/:
+    get:
+      operationId: v1_comms_templates_list
+      description: CRUD for reusable message templates.
+      parameters:
+      - in: query
+        name: audience
+        schema:
+          type: string
+          enum:
+          - merchant
+          - rider
+        description: |-
+          * `merchant` - Merchant
+          * `rider` - Rider
+      - in: query
+        name: msg_type
+        schema:
+          type: string
+          enum:
+          - drip
+          - general
+          - incentive
+          - operational
+          - performance
+          - promotion
+          - reminder
+          - seasonal
+        description: |-
+          * `promotion` - Promotion
+          * `reminder` - Reminder
+          * `drip` - Drip
+          * `seasonal` - Seasonal
+          * `performance` - Performance
+          * `incentive` - Incentive
+          * `operational` - Operational
+          * `general` - General
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMessageTemplateList'
+          description: ''
+    post:
+      operationId: v1_comms_templates_create
+      description: CRUD for reusable message templates.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageTemplate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MessageTemplate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MessageTemplate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageTemplate'
+          description: ''
+  /api/v1/comms/templates/{id}/:
+    get:
+      operationId: v1_comms_templates_retrieve
+      description: CRUD for reusable message templates.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this message template.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageTemplate'
+          description: ''
+    put:
+      operationId: v1_comms_templates_update
+      description: CRUD for reusable message templates.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this message template.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageTemplate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MessageTemplate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MessageTemplate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageTemplate'
+          description: ''
+    patch:
+      operationId: v1_comms_templates_partial_update
+      description: CRUD for reusable message templates.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this message template.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMessageTemplate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMessageTemplate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMessageTemplate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageTemplate'
+          description: ''
+    delete:
+      operationId: v1_comms_templates_destroy
+      description: CRUD for reusable message templates.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this message template.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/core/dashboard/:
+    get:
+      operationId: v1_core_dashboard_retrieve
+      description: |-
+        GET /api/v1/core/dashboard/?period=this_month
+        Returns the top-level KPIs used on the main Operations Command Center page.
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/core/leaderboard/:
+    get:
+      operationId: v1_core_leaderboard_retrieve
+      description: Global zone and vertical leaderboards.
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/core/merchants/:
+    get:
+      operationId: v1_core_merchants_list
+      parameters:
+      - in: query
+        name: business_type
+        schema:
+          type: string
+      - in: query
+        name: inactive_days
+        schema:
+          type: number
+        description: Days since last order (≥ N)
+      - in: query
+        name: onboarded_after
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: onboarded_before
+        schema:
+          type: string
+          format: date
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+      - in: query
+        name: vertical
+        schema:
+          type: integer
+      - in: query
+        name: zone
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMerchantListList'
+          description: ''
+    post:
+      operationId: v1_core_merchants_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MerchantDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MerchantDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MerchantDetail'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MerchantDetail'
+          description: ''
+  /api/v1/core/merchants/{id}/:
+    get:
+      operationId: v1_core_merchants_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this merchant.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MerchantDetail'
+          description: ''
+    put:
+      operationId: v1_core_merchants_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this merchant.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MerchantDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MerchantDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MerchantDetail'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MerchantDetail'
+          description: ''
+    patch:
+      operationId: v1_core_merchants_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this merchant.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMerchantDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMerchantDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMerchantDetail'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MerchantDetail'
+          description: ''
+    delete:
+      operationId: v1_core_merchants_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this merchant.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/core/merchants/{id}/performance/:
+    get:
+      operationId: v1_core_merchants_performance_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this merchant.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MerchantDetail'
+          description: ''
+  /api/v1/core/orders/:
+    get:
+      operationId: v1_core_orders_list
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: merchant
+        schema:
+          type: integer
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: rider
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - assigned
+            - cancelled
+            - delivered
+            - failed
+            - pending
+            - picked_up
+            - returned
+        description: |-
+          * `pending` - Pending
+          * `assigned` - Assigned to Rider
+          * `picked_up` - Picked Up
+          * `delivered` - Delivered
+          * `failed` - Failed
+          * `returned` - Returned
+          * `cancelled` - Cancelled
+        explode: true
+        style: form
+      - in: query
+        name: vertical
+        schema:
+          type: integer
+      - in: query
+        name: zone
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderList'
+          description: ''
+    post:
+      operationId: v1_core_orders_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderCreate'
+          description: ''
+  /api/v1/core/orders/{id}/:
+    get:
+      operationId: v1_core_orders_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this order.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+    put:
+      operationId: v1_core_orders_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this order.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderStatusUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderStatusUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderStatusUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderStatusUpdate'
+          description: ''
+    patch:
+      operationId: v1_core_orders_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this order.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedOrderStatusUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedOrderStatusUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedOrderStatusUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderStatusUpdate'
+          description: ''
+    delete:
+      operationId: v1_core_orders_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this order.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/core/orders/{id}/assign/:
+    post:
+      operationId: v1_core_orders_assign_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this order.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Order'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Order'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Order'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/v1/core/riders/:
+    get:
+      operationId: v1_core_riders_list
+      parameters:
+      - in: query
+        name: joined_after
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: joined_before
+        schema:
+          type: string
+          format: date
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+      - in: query
+        name: vertical
+        schema:
+          type: integer
+      - in: query
+        name: zone
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRiderListList'
+          description: ''
+    post:
+      operationId: v1_core_riders_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiderDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RiderDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RiderDetail'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiderDetail'
+          description: ''
+  /api/v1/core/riders/{id}/:
+    get:
+      operationId: v1_core_riders_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rider.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiderDetail'
+          description: ''
+    put:
+      operationId: v1_core_riders_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rider.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiderDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RiderDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RiderDetail'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiderDetail'
+          description: ''
+    patch:
+      operationId: v1_core_riders_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rider.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRiderDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRiderDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRiderDetail'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiderDetail'
+          description: ''
+    delete:
+      operationId: v1_core_riders_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rider.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/core/riders/{id}/orders/:
+    get:
+      operationId: v1_core_riders_orders_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rider.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiderDetail'
+          description: ''
+  /api/v1/core/riders/{id}/performance/:
+    get:
+      operationId: v1_core_riders_performance_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rider.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiderDetail'
+          description: ''
+  /api/v1/core/verticals/:
+    get:
+      operationId: v1_core_verticals_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVerticalList'
+          description: ''
+  /api/v1/core/verticals/{id}/:
+    get:
+      operationId: v1_core_verticals_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this vertical.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vertical'
+          description: ''
+  /api/v1/core/verticals/{id}/performance/:
+    get:
+      operationId: v1_core_verticals_performance_retrieve
+      description: GET /api/v1/core/verticals/{id}/performance/?period=this_month
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this vertical.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vertical'
+          description: ''
+  /api/v1/core/zones/:
+    get:
+      operationId: v1_core_zones_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: vertical
+        schema:
+          type: integer
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedZoneList'
+          description: ''
+  /api/v1/core/zones/{id}/:
+    get:
+      operationId: v1_core_zones_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this zone.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Zone'
+          description: ''
+  /api/v1/core/zones/{id}/performance/:
+    get:
+      operationId: v1_core_zones_performance_retrieve
+      description: GET /api/v1/core/zones/{id}/performance/?period=this_month
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this zone.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Zone'
+          description: ''
+components:
+  schemas:
+    AudienceEnum:
+      enum:
+      - merchant
+      - rider
+      type: string
+      description: |-
+        * `merchant` - Merchant
+        * `rider` - Rider
+    BroadcastCreate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        vertical:
+          type: integer
+          nullable: true
+          description: Scope to entire vertical
+        zone:
+          type: integer
+          nullable: true
+          description: Scope to single zone
+        audience:
+          $ref: '#/components/schemas/AudienceEnum'
+        recipient_filter:
+          type: string
+          description: all | active | watch | inactive | critical | atrisk | flagged
+          maxLength: 30
+        channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChannelsEnum'
+          description: 'Merchant: sms/whatsapp/email. Rider: inapp'
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        template:
+          type: integer
+          nullable: true
+        subject:
+          type: string
+          maxLength: 200
+        body:
+          type: string
+        scheduled_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - audience
+      - body
+      - id
+    BroadcastDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        audience:
+          $ref: '#/components/schemas/AudienceEnum'
+        channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChannelsEnum'
+          description: 'Merchant: sms/whatsapp/email. Rider: inapp'
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        subject:
+          type: string
+          maxLength: 200
+        status:
+          $ref: '#/components/schemas/StatusBe9Enum'
+        scheduled_at:
+          type: string
+          format: date-time
+          nullable: true
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+        total_recipients:
+          type: integer
+          readOnly: true
+        open_rate:
+          type: integer
+          readOnly: true
+        scope_name:
+          type: string
+          readOnly: true
+        body:
+          type: string
+        recipient_filter:
+          type: string
+          description: all | active | watch | inactive | critical | atrisk | flagged
+          maxLength: 30
+        deliveries_summary:
+          type: string
+          readOnly: true
+      required:
+      - audience
+      - body
+      - created_at
+      - created_by_name
+      - deliveries_summary
+      - id
+      - open_rate
+      - scope_name
+      - total_recipients
+    BroadcastList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        audience:
+          $ref: '#/components/schemas/AudienceEnum'
+        channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChannelsEnum'
+          description: 'Merchant: sms/whatsapp/email. Rider: inapp'
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        subject:
+          type: string
+          maxLength: 200
+        status:
+          $ref: '#/components/schemas/StatusBe9Enum'
+        scheduled_at:
+          type: string
+          format: date-time
+          nullable: true
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+        total_recipients:
+          type: integer
+          readOnly: true
+        open_rate:
+          type: integer
+          readOnly: true
+        scope_name:
+          type: string
+          readOnly: true
+      required:
+      - audience
+      - created_at
+      - created_by_name
+      - id
+      - open_rate
+      - scope_name
+      - total_recipients
+    ChannelsEnum:
+      enum:
+      - sms
+      - whatsapp
+      - email
+      - inapp
+      type: string
+      description: |-
+        * `sms` - SMS
+        * `whatsapp` - WhatsApp
+        * `email` - Email
+        * `inapp` - In-App (Rider)
+    CustomTokenObtainPair:
+      type: object
+      description: JWT payload enriched with role and linked entity.
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - password
+      - username
+    MerchantDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        zone_name:
+          type: string
+          readOnly: true
+        vertical_name:
+          type: string
+          readOnly: true
+        business_name:
+          type: string
+          maxLength: 200
+        business_type:
+          type: string
+          maxLength: 100
+        owner_name:
+          type: string
+          maxLength: 200
+        phone:
+          type: string
+          maxLength: 20
+        whatsapp:
+          type: string
+          maxLength: 20
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        address:
+          type: string
+        status:
+          $ref: '#/components/schemas/Status939Enum'
+        onboarded_at:
+          type: string
+          format: date
+        last_order_at:
+          type: string
+          format: date-time
+          nullable: true
+        cac_number:
+          type: string
+          maxLength: 50
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        zone:
+          type: integer
+      required:
+      - business_name
+      - business_type
+      - created_at
+      - id
+      - onboarded_at
+      - owner_name
+      - phone
+      - updated_at
+      - vertical_name
+      - zone
+      - zone_name
+    MerchantList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        business_name:
+          type: string
+          maxLength: 200
+        business_type:
+          type: string
+          maxLength: 100
+        owner_name:
+          type: string
+          maxLength: 200
+        phone:
+          type: string
+          maxLength: 20
+        zone:
+          type: integer
+        zone_name:
+          type: string
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/Status939Enum'
+        onboarded_at:
+          type: string
+          format: date
+        last_order_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - business_name
+      - business_type
+      - id
+      - onboarded_at
+      - owner_name
+      - phone
+      - zone
+      - zone_name
+    MessageTemplate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        audience:
+          $ref: '#/components/schemas/AudienceEnum'
+        msg_type:
+          $ref: '#/components/schemas/MsgTypeEnum'
+        label:
+          type: string
+          maxLength: 100
+        subject:
+          type: string
+          description: Email subject only
+          maxLength: 200
+        body:
+          type: string
+          description: Supports {name}, {orders}, {zone}, {captain} tokens
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - audience
+      - body
+      - created_at
+      - id
+      - label
+      - msg_type
+    MsgTypeEnum:
+      enum:
+      - promotion
+      - reminder
+      - drip
+      - seasonal
+      - performance
+      - incentive
+      - operational
+      - general
+      type: string
+      description: |-
+        * `promotion` - Promotion
+        * `reminder` - Reminder
+        * `drip` - Drip
+        * `seasonal` - Seasonal
+        * `performance` - Performance
+        * `incentive` - Incentive
+        * `operational` - Operational
+        * `general` - General
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        reference:
+          type: string
+          maxLength: 50
+        status:
+          $ref: '#/components/schemas/StatusE5dEnum'
+        merchant:
+          type: integer
+        merchant_name:
+          type: string
+          readOnly: true
+        rider:
+          type: integer
+          nullable: true
+        rider_name:
+          type: string
+          readOnly: true
+        zone:
+          type: integer
+        zone_name:
+          type: string
+          readOnly: true
+        pickup_address:
+          type: string
+        delivery_address:
+          type: string
+        delivery_fee:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        order_value:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: Value of goods
+        km_distance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          nullable: true
+        csat_score:
+          type: integer
+          maximum: 5
+          minimum: 1
+          nullable: true
+        rejection_reason:
+          type: string
+          maxLength: 200
+        failure_reason:
+          type: string
+          maxLength: 200
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        assigned_at:
+          type: string
+          format: date-time
+          nullable: true
+        picked_up_at:
+          type: string
+          format: date-time
+          nullable: true
+        delivered_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - created_at
+      - delivery_address
+      - id
+      - merchant
+      - merchant_name
+      - pickup_address
+      - reference
+      - rider_name
+      - zone
+      - zone_name
+    OrderCreate:
+      type: object
+      properties:
+        reference:
+          type: string
+          maxLength: 50
+        merchant:
+          type: integer
+        zone:
+          type: integer
+        pickup_address:
+          type: string
+        delivery_address:
+          type: string
+        delivery_fee:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        order_value:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: Value of goods
+      required:
+      - delivery_address
+      - merchant
+      - pickup_address
+      - reference
+      - zone
+    OrderStatusUpdate:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusE5dEnum'
+        rider:
+          type: integer
+          nullable: true
+        rejection_reason:
+          type: string
+          maxLength: 200
+        failure_reason:
+          type: string
+          maxLength: 200
+        csat_score:
+          type: integer
+          maximum: 5
+          minimum: 1
+          nullable: true
+        picked_up_at:
+          type: string
+          format: date-time
+          nullable: true
+        delivered_at:
+          type: string
+          format: date-time
+          nullable: true
+    PaginatedBroadcastListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BroadcastList'
+    PaginatedMerchantListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MerchantList'
+    PaginatedMessageTemplateList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessageTemplate'
+    PaginatedOrderList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+    PaginatedRiderListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RiderList'
+    PaginatedRiderNotificationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RiderNotification'
+    PaginatedVerticalList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Vertical'
+    PaginatedZoneList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Zone'
+    PatchedBroadcastCreate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        vertical:
+          type: integer
+          nullable: true
+          description: Scope to entire vertical
+        zone:
+          type: integer
+          nullable: true
+          description: Scope to single zone
+        audience:
+          $ref: '#/components/schemas/AudienceEnum'
+        recipient_filter:
+          type: string
+          description: all | active | watch | inactive | critical | atrisk | flagged
+          maxLength: 30
+        channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChannelsEnum'
+          description: 'Merchant: sms/whatsapp/email. Rider: inapp'
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        template:
+          type: integer
+          nullable: true
+        subject:
+          type: string
+          maxLength: 200
+        body:
+          type: string
+        scheduled_at:
+          type: string
+          format: date-time
+          nullable: true
+    PatchedMerchantDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        zone_name:
+          type: string
+          readOnly: true
+        vertical_name:
+          type: string
+          readOnly: true
+        business_name:
+          type: string
+          maxLength: 200
+        business_type:
+          type: string
+          maxLength: 100
+        owner_name:
+          type: string
+          maxLength: 200
+        phone:
+          type: string
+          maxLength: 20
+        whatsapp:
+          type: string
+          maxLength: 20
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        address:
+          type: string
+        status:
+          $ref: '#/components/schemas/Status939Enum'
+        onboarded_at:
+          type: string
+          format: date
+        last_order_at:
+          type: string
+          format: date-time
+          nullable: true
+        cac_number:
+          type: string
+          maxLength: 50
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        zone:
+          type: integer
+    PatchedMessageTemplate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        audience:
+          $ref: '#/components/schemas/AudienceEnum'
+        msg_type:
+          $ref: '#/components/schemas/MsgTypeEnum'
+        label:
+          type: string
+          maxLength: 100
+        subject:
+          type: string
+          description: Email subject only
+          maxLength: 200
+        body:
+          type: string
+          description: Supports {name}, {orders}, {zone}, {captain} tokens
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedOrderStatusUpdate:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusE5dEnum'
+        rider:
+          type: integer
+          nullable: true
+        rejection_reason:
+          type: string
+          maxLength: 200
+        failure_reason:
+          type: string
+          maxLength: 200
+        csat_score:
+          type: integer
+          maximum: 5
+          minimum: 1
+          nullable: true
+        picked_up_at:
+          type: string
+          format: date-time
+          nullable: true
+        delivered_at:
+          type: string
+          format: date-time
+          nullable: true
+    PatchedRiderDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        full_name:
+          type: string
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        phone:
+          type: string
+          maxLength: 20
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        zone:
+          type: integer
+        zone_name:
+          type: string
+          readOnly: true
+        vertical_name:
+          type: string
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/StatusB5bEnum'
+        joined_at:
+          type: string
+          format: date
+        bike_plate:
+          type: string
+          maxLength: 20
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedUserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        phone:
+          type: string
+          maxLength: 20
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+        vertical:
+          type: integer
+          nullable: true
+          description: Set for vertical_lead role
+        vertical_name:
+          type: string
+          readOnly: true
+        zone:
+          type: integer
+          nullable: true
+          description: Set for zone_captain role
+        zone_name:
+          type: string
+          readOnly: true
+        last_seen:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+    PriorityEnum:
+      enum:
+      - normal
+      - high
+      - urgent
+      type: string
+      description: |-
+        * `normal` - Normal
+        * `high` - High
+        * `urgent` - Urgent
+    RiderDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        full_name:
+          type: string
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        phone:
+          type: string
+          maxLength: 20
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        zone:
+          type: integer
+        zone_name:
+          type: string
+          readOnly: true
+        vertical_name:
+          type: string
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/StatusB5bEnum'
+        joined_at:
+          type: string
+          format: date
+        bike_plate:
+          type: string
+          maxLength: 20
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - first_name
+      - full_name
+      - id
+      - joined_at
+      - last_name
+      - phone
+      - updated_at
+      - vertical_name
+      - zone
+      - zone_name
+    RiderList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        full_name:
+          type: string
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        phone:
+          type: string
+          maxLength: 20
+        zone:
+          type: integer
+        zone_name:
+          type: string
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/StatusB5bEnum'
+        joined_at:
+          type: string
+          format: date
+      required:
+      - first_name
+      - full_name
+      - id
+      - joined_at
+      - last_name
+      - phone
+      - zone
+      - zone_name
+    RiderNotification:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 100
+        body:
+          type: string
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        is_read:
+          type: boolean
+          readOnly: true
+        read_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - body
+      - created_at
+      - id
+      - is_read
+      - read_at
+    RoleEnum:
+      enum:
+      - super_admin
+      - vertical_lead
+      - zone_captain
+      - ops_analyst
+      - rider
+      type: string
+      description: |-
+        * `super_admin` - Super Admin
+        * `vertical_lead` - Vertical Lead
+        * `zone_captain` - Zone Captain
+        * `ops_analyst` - Ops Analyst
+        * `rider` - Rider
+    Status939Enum:
+      enum:
+      - active
+      - watch
+      - inactive
+      - churned
+      type: string
+      description: |-
+        * `active` - Active
+        * `watch` - Watch
+        * `inactive` - Inactive
+        * `churned` - Churned
+    StatusB5bEnum:
+      enum:
+      - active
+      - inactive
+      - suspended
+      type: string
+      description: |-
+        * `active` - Active
+        * `inactive` - Inactive
+        * `suspended` - Suspended
+    StatusBe9Enum:
+      enum:
+      - draft
+      - scheduled
+      - sending
+      - sent
+      - failed
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `scheduled` - Scheduled
+        * `sending` - Sending
+        * `sent` - Sent
+        * `failed` - Failed
+    StatusE5dEnum:
+      enum:
+      - pending
+      - assigned
+      - picked_up
+      - delivered
+      - failed
+      - returned
+      - cancelled
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `assigned` - Assigned to Rider
+        * `picked_up` - Picked Up
+        * `delivered` - Delivered
+        * `failed` - Failed
+        * `returned` - Returned
+        * `cancelled` - Cancelled
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        phone:
+          type: string
+          maxLength: 20
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+        vertical:
+          type: integer
+          nullable: true
+          description: Set for vertical_lead role
+        vertical_name:
+          type: string
+          readOnly: true
+        zone:
+          type: integer
+          nullable: true
+          description: Set for zone_captain role
+        zone_name:
+          type: string
+          readOnly: true
+        last_seen:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - id
+      - last_seen
+      - username
+      - vertical_name
+      - zone_name
+    Vertical:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        full_name:
+          type: string
+          maxLength: 200
+        color_hex:
+          type: string
+          maxLength: 7
+        is_active:
+          type: boolean
+        zone_count:
+          type: integer
+          readOnly: true
+        base_pay:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: Monthly base ₦
+        transport_pay:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: Monthly transport ₦
+        commission_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,4})?$
+      required:
+      - full_name
+      - id
+      - name
+      - zone_count
+    Zone:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        slug:
+          type: string
+          maxLength: 50
+          pattern: ^[-a-zA-Z0-9_]+$
+        vertical:
+          type: integer
+        vertical_name:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+        order_target:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        revenue_target:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        rider_count:
+          type: string
+          readOnly: true
+        merchant_count:
+          type: string
+          readOnly: true
+        base_pay:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        transport_pay:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        commission_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,1}(?:\.\d{0,4})?$
+      required:
+      - id
+      - merchant_count
+      - name
+      - rider_count
+      - slug
+      - vertical
+      - vertical_name
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

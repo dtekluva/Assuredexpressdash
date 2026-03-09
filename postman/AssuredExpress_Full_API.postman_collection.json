@@ -1,0 +1,2749 @@
+{
+  "info": {
+    "_postman_id": "9632aa75-1ea9-4ecf-9c24-232c987f675f",
+    "name": "Assured Express Full API",
+    "description": "Complete endpoint coverage for auth/core/comms + docs/schema endpoints with request tests and variable chaining.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Docs",
+      "item": [
+        {
+          "name": "GET API Schema",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "pm.collectionVariables.set('schemaLoaded', 'true');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/schema/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "schema"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET Swagger UI",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/docs/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "docs"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET Redoc",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/redoc/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "redoc"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST Login (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "if (body.access) pm.collectionVariables.set('accessToken', body.access); if (body.refresh) pm.collectionVariables.set('refreshToken', body.refresh); if (body.user && body.user.id) pm.collectionVariables.set('user_id', String(body.user.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST Token Refresh",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "if (body.access) pm.collectionVariables.set('accessToken', body.access); if (body.refresh) pm.collectionVariables.set('refreshToken', body.refresh);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/token/refresh/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "token",
+                "refresh"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refreshToken}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "if (body.id) pm.collectionVariables.set('user_id', String(body.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/profile/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "profile"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/profile/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "profile"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"08000000000\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/profile/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "profile"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"email\": \"ops@example.com\",\n  \"first_name\": \"Admin\",\n  \"last_name\": \"User\",\n  \"role\": \"ops_analyst\",\n  \"phone\": \"08000000001\",\n  \"vertical\": null,\n  \"zone\": null\n}"
+            }
+          }
+        },
+        {
+          "name": "POST Change Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 400]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/change-password/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "change-password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"old_password\": \"{{password}}\",\n  \"new_password\": \"{{newPassword}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST FCM Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/fcm-token/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "fcm-token"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firebase_token\": \"fcm-token-from-postman\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 400]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/logout/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "logout"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refreshToken}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Core",
+      "item": [
+        {
+          "name": "GET Dashboard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/dashboard/?period=today",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "dashboard",
+                "?period=today"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET Leaderboard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/leaderboard/?scope=zones&period=today",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "leaderboard",
+                "?scope=zones&period=today"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET Verticals",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "const rows = Array.isArray(body) ? body : (body.results || []); if (rows.length && rows[0].id) pm.collectionVariables.set('vertical_id', String(rows[0].id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/verticals/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "verticals"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET Vertical Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/verticals/{{vertical_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "verticals",
+                "{{vertical_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET Vertical Performance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/verticals/{{vertical_id}}/performance/?period=today",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "verticals",
+                "{{vertical_id}}",
+                "performance",
+                "?period=today"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET Zones",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "const rows = Array.isArray(body) ? body : (body.results || []); if (rows.length && rows[0].id) pm.collectionVariables.set('zone_id', String(rows[0].id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/zones/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "zones"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET Zone Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/zones/{{zone_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "zones",
+                "{{zone_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET Zone Performance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/zones/{{zone_id}}/performance/?period=today",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "zones",
+                "{{zone_id}}",
+                "performance",
+                "?period=today"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET Riders",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "const rows = Array.isArray(body) ? body : (body.results || []); if (rows.length && rows[0].id) pm.collectionVariables.set('rider_id', String(rows[0].id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/riders/?zone={{zone_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "riders",
+                "?zone={{zone_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST Rider",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([201, 400]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "if (body.id) pm.collectionVariables.set('rider_id', String(body.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/riders/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "riders"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"zone\": \"{{zone_id}}\",\n  \"first_name\": \"Postman\",\n  \"last_name\": \"Rider\",\n  \"phone\": \"08055558888\",\n  \"email\": \"postman.rider@example.com\",\n  \"status\": \"active\",\n  \"joined_at\": \"{{today}}\",\n  \"bike_plate\": \"AE-POSTMAN\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET Rider Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/riders/{{rider_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "riders",
+                "{{rider_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH Rider",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 400, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/riders/{{rider_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "riders",
+                "{{rider_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"inactive\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT Rider",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 400, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/riders/{{rider_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "riders",
+                "{{rider_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"zone\": \"{{zone_id}}\",\n  \"first_name\": \"Postman\",\n  \"last_name\": \"Rider\",\n  \"phone\": \"08055558888\",\n  \"email\": \"postman.rider@example.com\",\n  \"status\": \"active\",\n  \"joined_at\": \"{{today}}\",\n  \"bike_plate\": \"AE-POSTMAN\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET Rider Performance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/riders/{{rider_id}}/performance/?period=today",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "riders",
+                "{{rider_id}}",
+                "performance",
+                "?period=today"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET Rider Orders",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/riders/{{rider_id}}/orders/?period=this_month",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "riders",
+                "{{rider_id}}",
+                "orders",
+                "?period=this_month"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET Merchants",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "const rows = Array.isArray(body) ? body : (body.results || []); if (rows.length && rows[0].id) pm.collectionVariables.set('merchant_id', String(rows[0].id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/merchants/?zone={{zone_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "merchants",
+                "?zone={{zone_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST Merchant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([201, 400]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "if (body.id) pm.collectionVariables.set('merchant_id', String(body.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/merchants/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "merchants"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"zone\": \"{{zone_id}}\",\n  \"business_name\": \"Postman Foods\",\n  \"business_type\": \"Food\",\n  \"owner_name\": \"Owner\",\n  \"phone\": \"07055558888\",\n  \"status\": \"active\",\n  \"onboarded_at\": \"{{today}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET Merchant Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/merchants/{{merchant_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "merchants",
+                "{{merchant_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH Merchant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 400, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/merchants/{{merchant_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "merchants",
+                "{{merchant_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"watch\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT Merchant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 400, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/merchants/{{merchant_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "merchants",
+                "{{merchant_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"zone\": \"{{zone_id}}\",\n  \"business_name\": \"Postman Foods\",\n  \"business_type\": \"Food\",\n  \"owner_name\": \"Owner\",\n  \"phone\": \"07055558888\",\n  \"status\": \"active\",\n  \"onboarded_at\": \"{{today}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET Merchant Performance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/merchants/{{merchant_id}}/performance/?period=today",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "merchants",
+                "{{merchant_id}}",
+                "performance",
+                "?period=today"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET Orders",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "const rows = Array.isArray(body) ? body : (body.results || []); if (rows.length && rows[0].id) pm.collectionVariables.set('order_id', String(rows[0].id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/orders/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([201, 400]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/orders/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "orders"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reference\": \"PM-{{timestamp}}\",\n  \"merchant\": \"{{merchant_id}}\",\n  \"zone\": \"{{zone_id}}\",\n  \"pickup_address\": \"1 Pickup Street\",\n  \"delivery_address\": \"2 Delivery Street\",\n  \"delivery_fee\": 1500,\n  \"order_value\": 12000\n}"
+            }
+          }
+        },
+        {
+          "name": "GET Order Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/orders/{{order_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "orders",
+                "{{order_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 400, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/orders/{{order_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "orders",
+                "{{order_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"assigned\",\n  \"rider\": \"{{rider_id}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 400, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/orders/{{order_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "orders",
+                "{{order_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"delivered\",\n  \"rider\": \"{{rider_id}}\",\n  \"csat_score\": 5\n}"
+            }
+          }
+        },
+        {
+          "name": "POST Assign Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 400, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/orders/{{order_id}}/assign/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "orders",
+                "{{order_id}}",
+                "assign"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rider_id\": \"{{rider_id}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comms",
+      "item": [
+        {
+          "name": "GET Templates",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comms/templates/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comms",
+                "templates"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([201, 400]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "if (body.id) pm.collectionVariables.set('template_id', String(body.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comms/templates/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comms",
+                "templates"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"audience\": \"merchant\",\n  \"msg_type\": \"promotion\",\n  \"label\": \"Postman Template\",\n  \"subject\": \"Promo\",\n  \"body\": \"Hello {name}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET Template Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comms/templates/{{template_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comms",
+                "templates",
+                "{{template_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 400, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comms/templates/{{template_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comms",
+                "templates",
+                "{{template_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Postman Template V2\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 400, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comms/templates/{{template_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comms",
+                "templates",
+                "{{template_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"audience\": \"merchant\",\n  \"msg_type\": \"promotion\",\n  \"label\": \"Postman Template V3\",\n  \"subject\": \"Promo\",\n  \"body\": \"Hello {name}\",\n  \"is_active\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "GET Broadcasts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comms/broadcasts/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comms",
+                "broadcasts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST Broadcast",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([201, 400]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "if (body.id) pm.collectionVariables.set('broadcast_id', String(body.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comms/broadcasts/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comms",
+                "broadcasts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"audience\": \"merchant\",\n  \"zone\": \"{{zone_id}}\",\n  \"recipient_filter\": \"all\",\n  \"channels\": [\n    \"sms\"\n  ],\n  \"priority\": \"normal\",\n  \"body\": \"Broadcast body\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET Broadcast Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comms/broadcasts/{{broadcast_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comms",
+                "broadcasts",
+                "{{broadcast_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH Broadcast",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 400, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comms/broadcasts/{{broadcast_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comms",
+                "broadcasts",
+                "{{broadcast_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"Updated Subject\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT Broadcast",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 400, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comms/broadcasts/{{broadcast_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comms",
+                "broadcasts",
+                "{{broadcast_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"audience\": \"merchant\",\n  \"zone\": \"{{zone_id}}\",\n  \"recipient_filter\": \"all\",\n  \"channels\": [\n    \"sms\"\n  ],\n  \"priority\": \"high\",\n  \"subject\": \"Final Subject\",\n  \"body\": \"Final body\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST Broadcast Send",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 400, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comms/broadcasts/{{broadcast_id}}/send/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comms",
+                "broadcasts",
+                "{{broadcast_id}}",
+                "send"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        },
+        {
+          "name": "GET Broadcast Deliveries",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comms/broadcasts/{{broadcast_id}}/deliveries/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comms",
+                "broadcasts",
+                "{{broadcast_id}}",
+                "deliveries"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rider Notifications",
+      "item": [
+        {
+          "name": "POST Login (Rider)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 401]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "if (body.access) pm.collectionVariables.set('riderAccessToken', body.access);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{riderUsername}}\",\n  \"password\": \"{{riderPassword}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET Rider Notifications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 401]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }",
+                  "if (pm.response.code === 200) { const rows = Array.isArray(body) ? body : (body.results || []); if (rows.length && rows[0].id) pm.collectionVariables.set('notification_id', String(rows[0].id)); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{riderAccessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comms/notifications/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comms",
+                "notifications"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST Mark Notification Read",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([200, 401, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{riderAccessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comms/notifications/{{notification_id}}/read/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comms",
+                "notifications",
+                "{{notification_id}}",
+                "read"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cleanup",
+      "item": [
+        {
+          "name": "DELETE Broadcast",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([204, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comms/broadcasts/{{broadcast_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comms",
+                "broadcasts",
+                "{{broadcast_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([204, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/comms/templates/{{template_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "comms",
+                "templates",
+                "{{template_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([204, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/orders/{{order_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "orders",
+                "{{order_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE Merchant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([204, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/merchants/{{merchant_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "merchants",
+                "{{merchant_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE Rider",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is expected', function () { pm.expect([204, 404]).to.include(pm.response.code); });",
+                  "const ctype = (pm.response.headers.get('Content-Type') || '').toLowerCase();",
+                  "pm.test('Response is JSON', function () { pm.expect(ctype).to.include('application/json'); });",
+                  "let body = {};",
+                  "try { body = pm.response.json(); } catch (e) { body = {}; }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/core/riders/{{rider_id}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "core",
+                "riders",
+                "{{rider_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "username",
+      "value": "admin"
+    },
+    {
+      "key": "password",
+      "value": "admin123"
+    },
+    {
+      "key": "newPassword",
+      "value": "admin12345"
+    },
+    {
+      "key": "riderUsername",
+      "value": "rider_user"
+    },
+    {
+      "key": "riderPassword",
+      "value": "strongpass99"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "riderAccessToken",
+      "value": ""
+    },
+    {
+      "key": "vertical_id",
+      "value": "1"
+    },
+    {
+      "key": "zone_id",
+      "value": "1"
+    },
+    {
+      "key": "rider_id",
+      "value": "1"
+    },
+    {
+      "key": "merchant_id",
+      "value": "1"
+    },
+    {
+      "key": "order_id",
+      "value": "1"
+    },
+    {
+      "key": "template_id",
+      "value": "1"
+    },
+    {
+      "key": "broadcast_id",
+      "value": "1"
+    },
+    {
+      "key": "notification_id",
+      "value": "1"
+    },
+    {
+      "key": "today",
+      "value": "2026-02-25"
+    },
+    {
+      "key": "timestamp",
+      "value": "{{$timestamp}}"
+    }
+  ]
+}
