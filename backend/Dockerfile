@@ -5,23 +5,19 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN apk add vim python3 py3-pip
+RUN apk add --no-cache vim python3 py3-pip curl
 
 COPY . /app
 
 RUN rm -rf .env
 
 # install dependencies
-RUN apk add --virtual .build-deps gcc musl-dev \
+RUN apk add --no-cache --virtual .build-deps gcc musl-dev \
     && pip install --no-cache-dir -r requirements.txt \
     && apk del .build-deps
 
+RUN chmod +x entrypoint.sh
 
 EXPOSE 8002
-# # Default: run ASGI server with gunicorn + uvicorn workers
-# CMD ["gunicorn", "assured_express.asgi:application", \
-#      "-k", "uvicorn.workers.UvicornWorker", \
-#      "--bind", "0.0.0.0:8000", \
-#      "--workers", "3", \
-#      "--timeout", "120", \
-#      "--access-logfile", "-"]
+
+ENTRYPOINT ["/app/entrypoint.sh"]
