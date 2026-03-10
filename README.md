@@ -31,51 +31,59 @@ ae_project/
 
 ---
 
-## Quick Start (Backend Docker + Frontend npm)
+## Quick Start (Dockerized Backend + Frontend npm)
+
+The project supports two Docker Compose configurations:
+1. **Full Backend Stack** (Root `docker-compose.yml`): Includes DB, Redis, API, Celery Worker, and Celery Beat.
+2. **Core Backend Stack** (`backend/docker-compose.yml`): Includes DB, Redis, and API (ideal for rapid development).
+
+### Setup Steps
 
 ```bash
 # 1. Clone and enter
 git clone <repo-url> && cd ae_project
 
-# 2. Create backend env file
+# 2. Configure Backend Environment
 cp backend/.env.example backend/.env
 # Edit backend/.env — at minimum fill in SECRET_KEY
 
-# 3. Create frontend env file
+# 3. Configure Frontend Environment
 cp frontend/.env.example frontend/.env
 # Set:
-#   VITE_API_URL=http://localhost:18000/api/v1
-#   VITE_WS_URL=ws://localhost:18000/ws
+#   VITE_API_URL=http://localhost:8000/api/v1
+#   VITE_WS_URL=ws://localhost:8000/ws
 
-# 4. Start backend services only (db + redis + django api)
+# 4. Start Backend Services
+# Option A: Full Backend Stack (recommended for feature testing)
 docker compose up -d --build
 
-# 5. Check backend
-curl -i http://localhost:18000/api/v1/auth/login/
-# Expected: 405 Method Not Allowed (endpoint exists; it only accepts POST)
+# Option B: Core Backend Stack (recommended for API development)
+cd backend
+docker compose up -d --build
+cd ..
 
-# 6. Start frontend with npm (no Docker)
+# 5. Verify Backend
+curl -i http://localhost:8000/api/docs/
+# Should return 200 OK with Swagger UI HTML
+
+# 6. Start Frontend (Local)
 cd frontend
 npm install
 npm run dev
 ```
 
-The `backend` service automatically runs:
-1. `python manage.py migrate`
-2. `python manage.py seed_data` — creates 4 verticals, 20 zones, 100 riders, 200 merchants, 6 months of synthetic snapshots
+### Management & Operations
 
-Endpoints in this setup:
-- Frontend: `http://localhost:3000` (or `3001` if Vite selects next free port)
-- Backend API: `http://localhost:18000`
-- Swagger: `http://localhost:18000/api/docs/`
-- Admin: `http://localhost:18000/admin/` (`admin / admin123`)
+| Action | Command |
+|---|---|
+| **Start Services** | `docker compose up -d` |
+| **Stop Services** | `docker compose down` |
+| **View Backend Logs** | `docker compose logs -f backend` |
+| **Run Migrations** | `docker compose exec backend python manage.py migrate` |
+| **Seed Data** | `docker compose exec backend python manage.py seed_data` |
+| **Create Superuser** | `docker compose exec backend python manage.py createsuperuser` |
 
-Useful commands:
-
-```bash
-docker compose logs -f backend
-docker compose down
-```
+---
 
 ---
 
