@@ -25,24 +25,29 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: .
     restart: unless-stopped
     ports:
-      - "${PORT:-8000}:8000"
+      - "127.0.0.1:8002:8002"
     env_file:
-      - ./backend/.env
+      - .env
     environment:
       DB_HOST: db
       DB_PORT: "5432"
       REDIS_URL: redis://redis:6379
       DEBUG: "False"
+    volumes:
+      - .:/app
+      - ./staticfiles:/app/staticfiles
+      - ./media:/app/media
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    command: uvicorn assured_express.asgi:application --host 0.0.0.0 --port 8002 --workers 2
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/docs/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8002/api/docs/"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -50,16 +55,19 @@ services:
 
   celery-worker:
     build:
-      context: ./backend
+      context: .
     restart: unless-stopped
     command: celery -A assured_express worker -l info --concurrency=4
     env_file:
-      - ./backend/.env
+      - .env
     environment:
       DB_HOST: db
       DB_PORT: "5432"
       REDIS_URL: redis://redis:6379
       DEBUG: "False"
+    volumes:
+      - .:/app
+      - ./media:/app/media
     depends_on:
       db:
         condition: service_healthy
@@ -68,16 +76,18 @@ services:
 
   celery-beat:
     build:
-      context: ./backend
+      context: .
     restart: unless-stopped
     command: celery -A assured_express beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     env_file:
-      - ./backend/.env
+      - .env
     environment:
       DB_HOST: db
       DB_PORT: "5432"
       REDIS_URL: redis://redis:6379
       DEBUG: "False"
+    volumes:
+      - .:/app
     depends_on:
       db: 
         condition: service_healthy
