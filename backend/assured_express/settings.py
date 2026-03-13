@@ -137,11 +137,12 @@ SIMPLE_JWT = {
 # ── CORS ─────────────────────────────────────────────────────────────────────
 CORS_ALLOWED_ORIGINS = config(
     "CORS_ALLOWED_ORIGINS",
-    default="http://localhost:3000,http://127.0.0.1:3000",
+    default="http://localhost:3000,http://127.0.0.1:3000,https://axpress-operations-command-center.vercel.app",
 ).split(",")
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     "https://metrics.axpress.net",
+    "https://axpress-operations-command-center.vercel.app",
 ]
 
 # ── Spectacular (OpenAPI docs) ───────────────────────────────────────────────
