@@ -177,6 +177,11 @@ class VerticalDetailView(APIView):
         # Build zone list — rename merchants_list → merchants (array)
         zones = []
         for z in raw_zones:
+            riders = z.get("riders", [])
+            # Zone revenue isn't in the upstream response; sum from riders
+            zone_revenue = float(z.get("revenue", 0) or 0) or sum(
+                float(r.get("revenue", 0) or 0) for r in riders
+            )
             zones.append({
                 "id": z.get("id"),
                 "name": z.get("name", ""),
@@ -184,17 +189,24 @@ class VerticalDetailView(APIView):
                 "perf_pct": float(z.get("perf_pct", 0) or 0),
                 "orders": int(z.get("orders", 0) or 0),
                 "target": int(z.get("target", 0) or 0),
-                "revenue": float(z.get("revenue", 0) or 0),
+                "revenue": zone_revenue,
                 "captain_pay": float(z.get("captain_pay", 0) or 0),
-                "riders": z.get("riders", []),
+                "riders": riders,
                 "merchants": z.get("merchants_list", []),
                 "merchant_summary": z.get("merchants", {}),
             })
 
         total_orders = int(aggregates.get("orders", 0) or 0)
         total_revenue = float(aggregates.get("revenue", 0) or 0)
-        target_orders = sum(z["target"] for z in zones)
-        pct = round(total_orders / target_orders * 100, 1) if target_orders else 0
+
+        # Zone targets are REVENUE targets (₦), not order counts
+        target_revenue = sum(z["target"] for z in zones)
+        pct = round(total_revenue / target_revenue * 100, 1) if target_revenue else 0
+
+        # Order-count targets come from individual riders
+        all_riders = [r for z in zones for r in z.get("riders", [])]
+        target_orders = sum(int(r.get("target_orders", 0) or 0) for r in all_riders)
+
         lead_pay = sum(z["captain_pay"] for z in zones)
 
         return Response({
@@ -209,6 +221,7 @@ class VerticalDetailView(APIView):
             "total_orders": total_orders,
             "target_orders": target_orders,
             "total_revenue": total_revenue,
+            "target_revenue": target_revenue,
             "pct": pct,
             "lead_pay": lead_pay,
         })
