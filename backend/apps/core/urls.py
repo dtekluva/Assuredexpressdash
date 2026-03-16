@@ -36,6 +36,7 @@ urlpatterns = [
     # Verticals
     path("verticals/", VerticalListView.as_view(), name="vertical-list"),
     path("verticals/<str:pk>/", VerticalDetailView.as_view(), name="vertical-detail"),
+    path("verticals/<str:pk>/performance/", VerticalDetailView.as_view(), name="vertical-performance"),  # alias
 
     # Zones — CRUD + analytics
     path("zones/", ZoneListView.as_view(), name="zone-list"),

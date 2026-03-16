@@ -8,6 +8,7 @@ Results are cached per data type (see cache.py).
 Only the Communications app uses a local database — everything else is proxied.
 """
 import logging
+from decimal import Decimal
 
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -19,6 +20,9 @@ from .axpress_client import AXpressAPIError
 from .cache import cached_axpress_call
 
 logger = logging.getLogger(__name__)
+
+# Colour palette for verticals (cycled if more than 5)
+_VERTICAL_COLORS = ["#10B981", "#3B82F6", "#F59E0B", "#EF4444", "#8B5CF6"]
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -55,10 +59,66 @@ class DashboardSummaryView(APIView):
     def get(self, request):
         period = _period(request)
         try:
-            data = _cached_get_verticals(period)
+            raw = _cached_get_verticals(period)
         except AXpressAPIError as exc:
             return _error_response(exc)
-        return Response(data)
+
+        # If upstream already returns a wrapped object, pass through
+        if isinstance(raw, dict) and "verticals" in raw:
+            return Response(raw)
+
+        # Otherwise transform the raw verticals array into the shape
+        # the frontend expects: { verticals: [...], total_orders, ... }
+        raw_list = raw if isinstance(raw, list) else []
+
+        verticals = []
+        for i, v in enumerate(raw_list):
+            pct = float(v.get("target_attainment_pct", 0) or 0)
+            orders = int(v.get("orders_count", 0) or 0)
+            revenue = float(v.get("revenue", 0) or 0)
+            merchant_count = int(v.get("merchant_count", 0) or 0)
+            # Back-calculate target from attainment percentage
+            target_orders = round(orders / (pct / 100)) if pct > 0 else 0
+
+            verticals.append({
+                "id": v.get("id"),
+                "full_name": v.get("name", ""),
+                "code": v.get("code", ""),
+                "lead_name": v.get("lead_name", ""),
+                "lead": v.get("lead"),
+                "total_orders": orders,
+                "orders_completed": int(v.get("orders_completed", 0) or 0),
+                "total_revenue": revenue,
+                "pct": pct,
+                "target_orders": target_orders,
+                "color": _VERTICAL_COLORS[i % len(_VERTICAL_COLORS)],
+                "zone_count": int(v.get("zone_count", 0) or 0),
+                "rider_count": int(v.get("rider_count", 0) or 0),
+                "merchant_count": merchant_count,
+            })
+
+        total_orders = sum(v["total_orders"] for v in verticals)
+        total_revenue = sum(v["total_revenue"] for v in verticals)
+        total_merchants = sum(v["merchant_count"] for v in verticals)
+        # Count merchants in verticals that have at least one order
+        active_merchants = sum(
+            v["merchant_count"] for v in verticals if v["total_orders"] > 0
+        )
+        activation_rate = (
+            round(active_merchants / total_merchants * 100)
+            if total_merchants
+            else 0
+        )
+
+        return Response({
+            "verticals": verticals,
+            "total_orders": total_orders,
+            "total_revenue": total_revenue,
+            "total_merchants": total_merchants,
+            "active_merchants": active_merchants,
+            "activation_rate": activation_rate,
+            "open_flags": 0,
+        })
 
 
 @cached_axpress_call("verticals")
@@ -89,17 +149,69 @@ class VerticalDetailView(APIView):
     """
     GET /api/v1/core/verticals/<id>/?period=this_month
 
-    Returns a single vertical with its zone breakdown.
+    Returns a single vertical with its zone breakdown, transformed
+    into the shape the frontend expects.
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
         period = _period(request)
         try:
-            data = _cached_get_vertical_detail(pk, period)
+            raw = _cached_get_vertical_detail(pk, period)
         except AXpressAPIError as exc:
             return _error_response(exc)
-        return Response(data)
+
+        # If already transformed (has a nested 'vertical' key), pass through
+        if isinstance(raw, dict) and "vertical" in raw:
+            return Response(raw)
+
+        # Transform raw upstream response into the frontend-expected shape
+        aggregates = raw.get("aggregates", {})
+        raw_zones = raw.get("zones", [])
+
+        # Determine vertical colour from code position
+        code = raw.get("code", "")
+        code_idx = ord(code.upper()) - ord("A") if code else 0
+        color_hex = _VERTICAL_COLORS[code_idx % len(_VERTICAL_COLORS)]
+
+        # Build zone list — rename merchants_list → merchants (array)
+        zones = []
+        for z in raw_zones:
+            zones.append({
+                "id": z.get("id"),
+                "name": z.get("name", ""),
+                "captain": z.get("captain", ""),
+                "perf_pct": float(z.get("perf_pct", 0) or 0),
+                "orders": int(z.get("orders", 0) or 0),
+                "target": int(z.get("target", 0) or 0),
+                "revenue": float(z.get("revenue", 0) or 0),
+                "captain_pay": float(z.get("captain_pay", 0) or 0),
+                "riders": z.get("riders", []),
+                "merchants": z.get("merchants_list", []),
+                "merchant_summary": z.get("merchants", {}),
+            })
+
+        total_orders = int(aggregates.get("orders", 0) or 0)
+        total_revenue = float(aggregates.get("revenue", 0) or 0)
+        target_orders = sum(z["target"] for z in zones)
+        pct = round(total_orders / target_orders * 100, 1) if target_orders else 0
+        lead_pay = sum(z["captain_pay"] for z in zones)
+
+        return Response({
+            "vertical": {
+                "id": raw.get("id"),
+                "full_name": raw.get("name", ""),
+                "code": code,
+                "lead_name": raw.get("lead_name", ""),
+                "color_hex": color_hex,
+            },
+            "zones": zones,
+            "total_orders": total_orders,
+            "target_orders": target_orders,
+            "total_revenue": total_revenue,
+            "pct": pct,
+            "lead_pay": lead_pay,
+        })
 
 
 @cached_axpress_call("vertical_detail")
