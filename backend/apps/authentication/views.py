@@ -6,7 +6,6 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
-from django.db import IntegrityError
 from django.utils import timezone
 
 User = get_user_model()
@@ -88,27 +87,35 @@ class SignUpSerializer(serializers.Serializer):
         return value
 
     def validate(self, data):
-        from apps.core.models import Vertical, Zone
+        from apps.core.axpress_client import get_verticals, list_zones, AXpressAPIError
 
-        # Vertical must exist
+        # Fetch live verticals and zones from AXpress backend
         try:
-            vertical = Vertical.objects.get(pk=data["vertical"], is_active=True)
-        except Vertical.DoesNotExist:
+            raw_verticals = get_verticals()
+            raw_zones = list_zones()
+        except AXpressAPIError:
+            raise serializers.ValidationError("Unable to validate options. Please try again.")
+
+        # Normalise verticals list
+        vert_list = raw_verticals if isinstance(raw_verticals, list) else raw_verticals.get("verticals", raw_verticals.get("results", []))
+        valid_vertical_ids = {v["id"] for v in vert_list}
+
+        if data["vertical"] not in valid_vertical_ids:
             raise serializers.ValidationError({"vertical": "Invalid or inactive vertical."})
-        data["_vertical"] = vertical
 
         # Zone captain must supply a valid zone in that vertical
         if data["role"] == User.Role.ZONE_CAPTAIN:
             zone_id = data.get("zone")
             if not zone_id:
                 raise serializers.ValidationError({"zone": "Zone is required for zone captains."})
-            try:
-                zone = Zone.objects.get(pk=zone_id, vertical=vertical, is_active=True)
-            except Zone.DoesNotExist:
+
+            zone_list = raw_zones if isinstance(raw_zones, list) else raw_zones.get("results", [])
+            valid_zone = next(
+                (z for z in zone_list if z["id"] == zone_id and z.get("vertical") == data["vertical"]),
+                None,
+            )
+            if not valid_zone:
                 raise serializers.ValidationError({"zone": "Invalid zone or zone not in selected vertical."})
-            data["_zone"] = zone
-        else:
-            data["_zone"] = None
 
         return data
 
@@ -121,8 +128,8 @@ class SignUpSerializer(serializers.Serializer):
             last_name=validated_data["last_name"],
             phone=validated_data["phone"],
             role=validated_data["role"],
-            vertical=validated_data["_vertical"],
-            zone=validated_data["_zone"],
+            vertical_id=validated_data["vertical"],
+            zone_id=validated_data.get("zone"),
             is_active=True,
         )
         return user
@@ -192,17 +199,30 @@ class SignUpOptionsView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        from apps.core.models import Vertical, Zone
-        verticals = list(
-            Vertical.objects.filter(is_active=True)
-            .values("id", "name", "full_name")
-            .order_by("name")
-        )
-        zones = list(
-            Zone.objects.filter(is_active=True)
-            .values("id", "name", "vertical_id")
-            .order_by("name")
-        )
+        from apps.core.axpress_client import get_verticals, list_zones, AXpressAPIError
+
+        try:
+            raw_verticals = get_verticals()
+            raw_zones = list_zones()
+        except AXpressAPIError:
+            return Response(
+                {"detail": "Unable to fetch options. Please try again."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        # Normalise — AXpress may return a list or { "verticals": [...] }
+        vert_list = raw_verticals if isinstance(raw_verticals, list) else raw_verticals.get("verticals", raw_verticals.get("results", []))
+        zone_list = raw_zones if isinstance(raw_zones, list) else raw_zones.get("results", [])
+
+        verticals = [
+            {"id": v["id"], "name": v.get("name", ""), "full_name": v.get("full_name", v.get("name", ""))}
+            for v in vert_list
+        ]
+        zones = [
+            {"id": z["id"], "name": z.get("name", ""), "vertical_id": z.get("vertical", z.get("vertical_id"))}
+            for z in zone_list
+        ]
+
         return Response({"verticals": verticals, "zones": zones})
 
 
