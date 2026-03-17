@@ -6,6 +6,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError
 from django.utils import timezone
 
 User = get_user_model()
@@ -62,11 +63,97 @@ class UpdateFCMTokenSerializer(serializers.Serializer):
     firebase_token = serializers.CharField(required=True)
 
 
+SIGNUP_ROLES = {User.Role.VERTICAL_LEAD, User.Role.ZONE_CAPTAIN}
+
+
+class SignUpSerializer(serializers.Serializer):
+    first_name = serializers.CharField(max_length=150)
+    last_name  = serializers.CharField(max_length=150)
+    email      = serializers.EmailField()
+    phone      = serializers.CharField(max_length=20)
+    password   = serializers.CharField(min_length=8, write_only=True)
+    role       = serializers.ChoiceField(choices=[
+        (User.Role.VERTICAL_LEAD, "Vertical Lead"),
+        (User.Role.ZONE_CAPTAIN, "Zone Captain"),
+    ])
+    vertical   = serializers.IntegerField(help_text="Required for both roles")
+    zone       = serializers.IntegerField(
+        required=False, allow_null=True,
+        help_text="Required for zone_captain role",
+    )
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value
+
+    def validate(self, data):
+        from apps.core.models import Vertical, Zone
+
+        # Vertical must exist
+        try:
+            vertical = Vertical.objects.get(pk=data["vertical"], is_active=True)
+        except Vertical.DoesNotExist:
+            raise serializers.ValidationError({"vertical": "Invalid or inactive vertical."})
+        data["_vertical"] = vertical
+
+        # Zone captain must supply a valid zone in that vertical
+        if data["role"] == User.Role.ZONE_CAPTAIN:
+            zone_id = data.get("zone")
+            if not zone_id:
+                raise serializers.ValidationError({"zone": "Zone is required for zone captains."})
+            try:
+                zone = Zone.objects.get(pk=zone_id, vertical=vertical, is_active=True)
+            except Zone.DoesNotExist:
+                raise serializers.ValidationError({"zone": "Invalid zone or zone not in selected vertical."})
+            data["_zone"] = zone
+        else:
+            data["_zone"] = None
+
+        return data
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            username=validated_data["email"],
+            email=validated_data["email"],
+            password=validated_data["password"],
+            first_name=validated_data["first_name"],
+            last_name=validated_data["last_name"],
+            phone=validated_data["phone"],
+            role=validated_data["role"],
+            vertical=validated_data["_vertical"],
+            zone=validated_data["_zone"],
+            is_active=True,
+        )
+        return user
+
+
 # ── Views ────────────────────────────────────────────────────────────────────
 
 class LoginView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
     permission_classes = [AllowAny]
+
+
+class SignUpView(APIView):
+    """Self-registration for Vertical Leads and Zone Captains."""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = SignUpSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        # Issue JWT tokens so the user is logged in immediately
+        token = CustomTokenObtainPairSerializer.get_token(user)
+        return Response(
+            {
+                "access": str(token.access_token),
+                "refresh": str(token),
+                "user": UserProfileSerializer(user).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class LogoutView(APIView):
@@ -98,6 +185,25 @@ class ChangePasswordView(APIView):
         request.user.set_password(serializer.validated_data["new_password"])
         request.user.save()
         return Response({"detail": "Password changed successfully."})
+
+
+class SignUpOptionsView(APIView):
+    """Public endpoint returning verticals + zones for sign-up dropdowns."""
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        from apps.core.models import Vertical, Zone
+        verticals = list(
+            Vertical.objects.filter(is_active=True)
+            .values("id", "name", "full_name")
+            .order_by("name")
+        )
+        zones = list(
+            Zone.objects.filter(is_active=True)
+            .values("id", "name", "vertical_id")
+            .order_by("name")
+        )
+        return Response({"verticals": verticals, "zones": zones})
 
 
 class UpdateFCMTokenView(APIView):
