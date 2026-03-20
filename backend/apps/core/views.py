@@ -189,6 +189,7 @@ class VerticalDetailView(APIView):
                 "perf_pct": float(z.get("perf_pct", 0) or 0),
                 "orders": int(z.get("orders", 0) or 0),
                 "target": int(z.get("target", 0) or 0),
+                "target_orders": sum(int(r.get("target_orders", 0) or 0) for r in riders),
                 "revenue": zone_revenue,
                 "captain_pay": float(z.get("captain_pay", 0) or 0),
                 "riders": riders,

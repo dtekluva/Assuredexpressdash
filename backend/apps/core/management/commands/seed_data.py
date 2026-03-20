@@ -1,7 +1,7 @@
 """
 python manage.py seed_data
 
-Populates the database with all 4 verticals, 20 zones, 100 riders,
+Populates the database with all 4 verticals, 21 zones, riders,
 200 merchants, and 6 months of synthetic snapshot data for development.
 """
 import random
@@ -17,17 +17,17 @@ from apps.core.models import (
 User = get_user_model()
 
 VERTICALS = [
-    {"name": "Dennis",     "full_name": "Dennis — Island & Lekki",    "color_hex": "#3B82F6"},
-    {"name": "Seun",       "full_name": "Seun — Central Mainland",     "color_hex": "#10B981"},
-    {"name": "Mary",       "full_name": "Mary — North & Ikorodu",      "color_hex": "#F59E0B"},
-    {"name": "Erinfolami", "full_name": "Erinfolami — Southwest",      "color_hex": "#A855F7"},
+    {"name": "Dennis",     "full_name": "Dennis — Island & Lekki Corridor", "color_hex": "#3B82F6"},
+    {"name": "Seun",       "full_name": "Seun — Central Mainland",          "color_hex": "#10B981"},
+    {"name": "Erinfolami", "full_name": "Erinfolami — Southwest Mainland",  "color_hex": "#A855F7"},
+    {"name": "Mary",       "full_name": "Mary — North & Ikorodu",           "color_hex": "#F59E0B"},
 ]
 
 ZONES_PER_VERTICAL = [
-    ["Awoyaya", "Ajah", "Lekki Ph.1", "Falomo", "Oyingbo"],
-    ["Sabo", "Tejuosho", "Bariga", "Oshodi", "Mile 12"],
-    ["Ikeja", "Ikorodu", "Berger", "Agege", "Ayobo"],
-    ["Egbeda", "Ikotun", "Iyana Iba", "Festac", "Ajegunle"],
+    ["Osapa/Jakande", "Awoyaya", "Ajah", "Obalende"],
+    ["Oshodi", "Oyingbo", "Tejuosho", "Sabo", "Bariga", "Ajegunle"],
+    ["Festac", "Iyana ipaja/egbeda", "Ikotun", "Tradefair", "Iyana Iba", "Ayobo"],
+    ["Agege", "Ikeja", "Mile12", "Ikorodu", "Berger"],
 ]
 
 RIDER_FIRST = ["Emeka", "Tunde", "Chukwudi", "Bola", "Kola", "Festus", "Deji", "Victor",
