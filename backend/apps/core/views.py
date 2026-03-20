@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 from . import axpress_client
 from .axpress_client import AXpressAPIError
 from .cache import cached_axpress_call
+from .permissions import IsSuperAdmin
 
 logger = logging.getLogger(__name__)
 
@@ -439,7 +440,56 @@ def _cached_get_order_analytics(period, zone=None, vertical=None):
 # ═════════════════════════════════════════════════════════════════════════════
 
 
-# ── Zones (list) ─────────────────────────────────────────────────────────────
+# ── Verticals CRUD ──────────────────────────────────────────────────────────
+
+class VerticalCRUDListView(APIView):
+    """GET /api/v1/core/admin/verticals/ — list all verticals (dispatch)
+       POST /api/v1/core/admin/verticals/ — create a new vertical
+    """
+    permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def get(self, request):
+        try:
+            data = axpress_client.list_verticals_crud(dict(request.query_params))
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data)
+
+    def post(self, request):
+        try:
+            data = axpress_client.create_vertical(request.data)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data, status=status.HTTP_201_CREATED)
+
+
+class VerticalCRUDDetailView(APIView):
+    """GET/PATCH/DELETE /api/v1/core/admin/verticals/<id>/"""
+    permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def get(self, request, pk):
+        try:
+            data = axpress_client.get_vertical(pk)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data)
+
+    def patch(self, request, pk):
+        try:
+            data = axpress_client.update_vertical(pk, request.data)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data)
+
+    def delete(self, request, pk):
+        try:
+            axpress_client.delete_vertical(pk)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ── Zones CRUD ──────────────────────────────────────────────────────────────
 
 class ZoneListView(APIView):
     """GET /api/v1/core/zones/?vertical=..."""
@@ -451,6 +501,102 @@ class ZoneListView(APIView):
         except AXpressAPIError as exc:
             return _error_response(exc)
         return Response(data)
+
+
+class ZoneCRUDListView(APIView):
+    """GET /api/v1/core/admin/zones/ — list all zones
+       POST /api/v1/core/admin/zones/ — create a new zone
+    """
+    permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def get(self, request):
+        try:
+            data = axpress_client.list_zones(dict(request.query_params))
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data)
+
+    def post(self, request):
+        try:
+            data = axpress_client.create_zone(request.data)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data, status=status.HTTP_201_CREATED)
+
+
+class ZoneCRUDDetailView(APIView):
+    """GET/PATCH/DELETE /api/v1/core/admin/zones/<id>/"""
+    permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def get(self, request, pk):
+        try:
+            data = axpress_client.get_zone(pk)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data)
+
+    def patch(self, request, pk):
+        try:
+            data = axpress_client.update_zone(pk, request.data)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data)
+
+    def delete(self, request, pk):
+        try:
+            axpress_client.delete_zone(pk)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ── Zone Targets CRUD ───────────────────────────────────────────────────────
+
+class ZoneTargetListView(APIView):
+    """GET /api/v1/core/admin/zone-targets/?zone=...&month=...
+       POST /api/v1/core/admin/zone-targets/
+    """
+    permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def get(self, request):
+        try:
+            data = axpress_client.list_zone_targets(dict(request.query_params))
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data)
+
+    def post(self, request):
+        try:
+            data = axpress_client.create_zone_target(request.data)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data, status=status.HTTP_201_CREATED)
+
+
+class ZoneTargetDetailView(APIView):
+    """GET/PATCH/DELETE /api/v1/core/admin/zone-targets/<id>/"""
+    permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def get(self, request, pk):
+        try:
+            data = axpress_client.get_zone_target(pk)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data)
+
+    def patch(self, request, pk):
+        try:
+            data = axpress_client.update_zone_target(pk, request.data)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data)
+
+    def delete(self, request, pk):
+        try:
+            axpress_client.delete_zone_target(pk)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 # ── Riders CRUD ──────────────────────────────────────────────────────────────

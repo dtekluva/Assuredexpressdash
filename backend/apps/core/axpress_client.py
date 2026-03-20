@@ -123,6 +123,48 @@ def _patch(path: str, data: dict | None = None, timeout: int = 30) -> dict:
         raise AXpressAPIError(0, "Request timed out") from exc
 
 
+def _put(path: str, data: dict | None = None, timeout: int = 30) -> dict:
+    """Authenticated PUT request to the main AXpress backend."""
+    url = _url(path)
+    try:
+        resp = _get_session().put(url, headers=_headers(), json=data, timeout=timeout)
+        resp.raise_for_status()
+        return resp.json()
+    except requests.exceptions.HTTPError as exc:
+        status = exc.response.status_code if exc.response is not None else 0
+        body = exc.response.text[:500] if exc.response is not None else ""
+        logger.error("AXpress API error %s %s: %s", status, url, body)
+        raise AXpressAPIError(status, body) from exc
+    except requests.exceptions.ConnectionError as exc:
+        logger.error("AXpress API connection error: %s", exc)
+        raise AXpressAPIError(0, "Connection refused — is the main backend running?") from exc
+    except requests.exceptions.Timeout as exc:
+        logger.error("AXpress API timeout: %s", url)
+        raise AXpressAPIError(0, "Request timed out") from exc
+
+
+def _delete(path: str, timeout: int = 30):
+    """Authenticated DELETE request to the main AXpress backend."""
+    url = _url(path)
+    try:
+        resp = _get_session().delete(url, headers=_headers(), timeout=timeout)
+        resp.raise_for_status()
+        if resp.status_code == 204:
+            return None
+        return resp.json()
+    except requests.exceptions.HTTPError as exc:
+        status = exc.response.status_code if exc.response is not None else 0
+        body = exc.response.text[:500] if exc.response is not None else ""
+        logger.error("AXpress API error %s %s: %s", status, url, body)
+        raise AXpressAPIError(status, body) from exc
+    except requests.exceptions.ConnectionError as exc:
+        logger.error("AXpress API connection error: %s", exc)
+        raise AXpressAPIError(0, "Connection refused — is the main backend running?") from exc
+    except requests.exceptions.Timeout as exc:
+        logger.error("AXpress API timeout: %s", url)
+        raise AXpressAPIError(0, "Request timed out") from exc
+
+
 def _period_params(period: str, **extra) -> dict:
     """Build query-param dict, always including ?period=..."""
     params = {"period": period}
@@ -200,9 +242,67 @@ def get_order_analytics(period: str = "this_month", zone=None, vertical=None):
 
 # ── Dispatch CRUD (proxied to /api/dispatch/*) ──────────────────────────────
 
+# Verticals
+def list_verticals_crud(params: dict | None = None):
+    return _get("/api/dispatch/verticals/", params)
+
+
+def get_vertical(vertical_id):
+    return _get(f"/api/dispatch/verticals/{vertical_id}/")
+
+
+def create_vertical(data: dict):
+    return _post("/api/dispatch/verticals/", data)
+
+
+def update_vertical(vertical_id, data: dict):
+    return _patch(f"/api/dispatch/verticals/{vertical_id}/", data)
+
+
+def delete_vertical(vertical_id):
+    return _delete(f"/api/dispatch/verticals/{vertical_id}/")
+
+
 # Zones
 def list_zones(params: dict | None = None):
     return _get("/api/dispatch/zones/", params)
+
+
+def get_zone(zone_id):
+    return _get(f"/api/dispatch/zones/{zone_id}/")
+
+
+def create_zone(data: dict):
+    return _post("/api/dispatch/zones/", data)
+
+
+def update_zone(zone_id, data: dict):
+    return _patch(f"/api/dispatch/zones/{zone_id}/", data)
+
+
+def delete_zone(zone_id):
+    return _delete(f"/api/dispatch/zones/{zone_id}/")
+
+
+# Zone Targets
+def list_zone_targets(params: dict | None = None):
+    return _get("/api/occ/zone-targets/", params)
+
+
+def get_zone_target(target_id):
+    return _get(f"/api/occ/zone-targets/{target_id}/")
+
+
+def create_zone_target(data: dict):
+    return _post("/api/occ/zone-targets/", data)
+
+
+def update_zone_target(target_id, data: dict):
+    return _patch(f"/api/occ/zone-targets/{target_id}/", data)
+
+
+def delete_zone_target(target_id):
+    return _delete(f"/api/occ/zone-targets/{target_id}/")
 
 
 # Riders

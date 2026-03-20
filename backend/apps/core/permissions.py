@@ -1,6 +1,12 @@
 from rest_framework.permissions import BasePermission
 
 
+class IsSuperAdmin(BasePermission):
+    """Only super admins can perform admin CRUD operations."""
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role == "super_admin"
+
+
 class IsAdminOrVerticalLead(BasePermission):
     """Super admins and vertical leads can see all vertical data."""
     def has_permission(self, request, view):
