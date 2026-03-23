@@ -639,6 +639,74 @@ class RiderDetailView(APIView):
         return Response(data)
 
 
+class RiderReassignView(APIView):
+    """
+    POST /api/v1/core/admin/riders/reassign/
+
+    Move a single rider to a different zone.
+    Body: { "rider_id": "<uuid>", "new_zone_id": "<uuid>" }
+    """
+    permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def post(self, request):
+        rider_id = request.data.get("rider_id")
+        new_zone_id = request.data.get("new_zone_id")
+
+        if not rider_id or not new_zone_id:
+            return Response(
+                {"error": "rider_id and new_zone_id are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            data = axpress_client.reassign_rider(rider_id, new_zone_id)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data)
+
+
+class RiderBulkReassignView(APIView):
+    """
+    POST /api/v1/core/admin/riders/bulk-reassign/
+
+    Move multiple riders to a different zone in one request.
+    Body: { "rider_ids": ["<uuid>", ...], "new_zone_id": "<uuid>" }
+    """
+    permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def post(self, request):
+        rider_ids = request.data.get("rider_ids", [])
+        new_zone_id = request.data.get("new_zone_id")
+
+        if not rider_ids or not isinstance(rider_ids, list):
+            return Response(
+                {"error": "rider_ids must be a non-empty list"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not new_zone_id:
+            return Response(
+                {"error": "new_zone_id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        results = {"succeeded": [], "failed": []}
+        for rider_id in rider_ids:
+            try:
+                axpress_client.reassign_rider(rider_id, new_zone_id)
+                results["succeeded"].append(rider_id)
+            except AXpressAPIError as exc:
+                results["failed"].append({
+                    "rider_id": rider_id,
+                    "error": exc.detail,
+                })
+
+        resp_status = (
+            status.HTTP_200_OK if not results["failed"]
+            else status.HTTP_207_MULTI_STATUS
+        )
+        return Response(results, status=resp_status)
+
+
 class RiderOrdersView(APIView):
     """GET /api/v1/core/riders/<id>/orders/"""
     permission_classes = [IsAuthenticated]

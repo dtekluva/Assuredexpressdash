@@ -25,6 +25,8 @@ from .views import (
     RiderListView,
     RiderDetailView,
     RiderOrdersView,
+    RiderReassignView,
+    RiderBulkReassignView,
     MerchantAnalyticsView,
     MerchantListView,
     MerchantDetailView,
@@ -80,4 +82,8 @@ urlpatterns = [
     path("admin/zones/<str:pk>/", ZoneCRUDDetailView.as_view(), name="admin-zone-detail"),
     path("admin/zone-targets/", ZoneTargetListView.as_view(), name="admin-zone-target-list"),
     path("admin/zone-targets/<str:pk>/", ZoneTargetDetailView.as_view(), name="admin-zone-target-detail"),
+
+    # Admin — Rider reassignment
+    path("admin/riders/reassign/", RiderReassignView.as_view(), name="admin-rider-reassign"),
+    path("admin/riders/bulk-reassign/", RiderBulkReassignView.as_view(), name="admin-rider-bulk-reassign"),
 ]

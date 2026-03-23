@@ -322,6 +322,11 @@ def update_rider(rider_id, data: dict):
     return _patch(f"/api/dispatch/riders/{rider_id}/", data)
 
 
+def reassign_rider(rider_id, new_zone_id):
+    """Update a rider's zone assignment."""
+    return _patch(f"/api/dispatch/riders/{rider_id}/", {"zone": new_zone_id})
+
+
 def get_rider_orders(rider_id, params: dict | None = None):
     """Rider order history from the riders app."""
     return _get(f"/api/riders/orders/history/", params)
