@@ -19,7 +19,7 @@ def dispatch_broadcast(self, broadcast_id: int):
     from apps.core.models import Merchant, Rider
 
     try:
-        broadcast = Broadcast.objects.select_related("zone", "vertical").get(id=broadcast_id)
+        broadcast = Broadcast.objects.select_related("hub", "zone").get(id=broadcast_id)
     except Broadcast.DoesNotExist:
         logger.error("Broadcast %s not found", broadcast_id)
         return
@@ -30,10 +30,10 @@ def dispatch_broadcast(self, broadcast_id: int):
     # Resolve recipients
     if broadcast.audience == "merchant":
         qs = Merchant.objects.all()
-        if broadcast.zone_id:
-            qs = qs.filter(zone_id=broadcast.zone_id)
-        elif broadcast.vertical_id:
-            qs = qs.filter(zone__vertical_id=broadcast.vertical_id)
+        if broadcast.hub_id:
+            qs = qs.filter(hub_id=broadcast.hub_id)
+        elif broadcast.zone_id:
+            qs = qs.filter(hub__zone_id=broadcast.zone_id)
 
         flt = broadcast.recipient_filter
         if flt == "active":
@@ -54,14 +54,13 @@ def dispatch_broadcast(self, broadcast_id: int):
 
     else:  # rider
         qs = Rider.objects.select_related("user_account").filter(status="active")
-        if broadcast.zone_id:
-            qs = qs.filter(zone_id=broadcast.zone_id)
-        elif broadcast.vertical_id:
-            qs = qs.filter(zone__vertical_id=broadcast.vertical_id)
+        if broadcast.hub_id:
+            qs = qs.filter(hub_id=broadcast.hub_id)
+        elif broadcast.zone_id:
+            qs = qs.filter(hub__zone_id=broadcast.zone_id)
 
         flt = broadcast.recipient_filter
         if flt == "critical":
-            # Can't filter by pct directly without snapshot join; fetch all and filter
             pass  # Advanced: add annotation in future
         elif flt == "flagged":
             qs = qs.filter(snapshots__has_ghost_flag=True).distinct()
@@ -87,7 +86,7 @@ def send_to_merchant(self, delivery_id: int):
 
     try:
         delivery = BroadcastDelivery.objects.select_related(
-            "broadcast", "merchant__zone"
+            "broadcast", "merchant__hub"
         ).get(id=delivery_id)
         deliver_to_merchant(
             delivery,
@@ -107,7 +106,7 @@ def send_to_rider(self, delivery_id: int):
 
     try:
         delivery = BroadcastDelivery.objects.select_related(
-            "broadcast", "rider__zone", "rider__user_account"
+            "broadcast", "rider__hub", "rider__user_account"
         ).get(id=delivery_id)
         deliver_to_rider(
             delivery,

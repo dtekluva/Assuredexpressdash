@@ -13,16 +13,16 @@ class BroadcastCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Broadcast
         fields = [
-            "id", "vertical", "zone", "audience", "recipient_filter",
+            "id", "zone", "hub", "audience", "recipient_filter",
             "channels", "priority", "template", "subject", "body", "scheduled_at",
         ]
         read_only_fields = ["id"]
 
     def validate(self, data):
-        vertical = data.get("vertical", getattr(self.instance, "vertical", None))
         zone = data.get("zone", getattr(self.instance, "zone", None))
-        if not vertical and not zone:
-            raise serializers.ValidationError("Either vertical or zone must be specified.")
+        hub = data.get("hub", getattr(self.instance, "hub", None))
+        if not zone and not hub:
+            raise serializers.ValidationError("Either zone or hub must be specified.")
         audience = data.get("audience", getattr(self.instance, "audience", None))
         channels = data.get("channels", getattr(self.instance, "channels", []))
         if audience == "rider" and "inapp" not in channels:
@@ -45,10 +45,10 @@ class BroadcastListSerializer(serializers.ModelSerializer):
         ]
 
     def get_scope_name(self, obj):
+        if obj.hub:
+            return f"{obj.hub.name} (Hub)"
         if obj.zone:
             return f"{obj.zone.name} (Zone)"
-        if obj.vertical:
-            return f"{obj.vertical.name} (Vertical)"
         return "All"
 
 

@@ -18,13 +18,14 @@ CACHE_TTL = {
     "rider_locations":  30,      # map view — near real-time
     "rider_performance": 120,    # 2 minutes
     "merchant_analytics": 120,   # 2 minutes
-    "zone_dashboard":   300,     # 5 minutes
-    "verticals":        300,     # 5 minutes
-    "vertical_detail":  300,
-    "zone_riders":      120,
-    "zone_merchants":   120,
+    "hub_dashboard":    300,     # 5 minutes
+    "zones":            300,     # 5 minutes
+    "zone_detail":      300,
+    "hub_riders":       120,
+    "hub_merchants":    120,
     "leaderboard":      300,     # 5 minutes
     "order_analytics":  300,
+    "relay_nodes":      300,
 }
 
 
@@ -43,9 +44,9 @@ def cached_axpress_call(data_type: str):
 
     Usage::
 
-        @cached_axpress_call("verticals")
-        def get_verticals(period="this_month"):
-            return axpress_client.get_verticals(period)
+        @cached_axpress_call("zones")
+        def get_zones(period="this_month"):
+            return axpress_client.get_zones(period)
 
     The cache key is built from the function name + all positional/keyword args.
     """

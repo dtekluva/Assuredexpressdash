@@ -7,7 +7,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 from tests.factories import (
-    UserFactory, VerticalFactory, ZoneFactory, RiderFactory, MerchantFactory,
+    UserFactory, ZoneFactory, HubFactory, RiderFactory, MerchantFactory,
 )
 
 def _results(data):
@@ -24,12 +24,12 @@ def admin_client(db):
 
 
 @pytest.fixture
-def zone_with_members(db):
-    v = VerticalFactory()
-    z = ZoneFactory(vertical=v)
-    riders    = [RiderFactory(zone=z) for _ in range(3)]
-    merchants = [MerchantFactory(zone=z) for _ in range(5)]
-    return {"vertical": v, "zone": z, "riders": riders, "merchants": merchants}
+def hub_with_members(db):
+    zone = ZoneFactory()
+    hub  = HubFactory(zone=zone)
+    riders    = [RiderFactory(hub=hub) for _ in range(3)]
+    merchants = [MerchantFactory(hub=hub) for _ in range(5)]
+    return {"zone": zone, "hub": hub, "riders": riders, "merchants": merchants}
 
 
 @pytest.mark.django_db
@@ -70,12 +70,12 @@ class TestMessageTemplates:
 
 @pytest.mark.django_db
 class TestBroadcasts:
-    def test_create_merchant_broadcast(self, admin_client, zone_with_members):
+    def test_create_merchant_broadcast(self, admin_client, hub_with_members):
         client, _ = admin_client
-        z = zone_with_members["zone"]
+        hub = hub_with_members["hub"]
         resp = client.post(reverse("broadcast-list"), {
             "audience":         "merchant",
-            "zone":             z.id,
+            "hub":              hub.id,
             "recipient_filter": "all",
             "channels":         ["whatsapp", "sms"],
             "subject":          "Test Broadcast",
@@ -85,12 +85,12 @@ class TestBroadcasts:
         assert "id" in resp.data
         assert resp.data["audience"] == "merchant"
 
-    def test_create_rider_broadcast(self, admin_client, zone_with_members):
+    def test_create_rider_broadcast(self, admin_client, hub_with_members):
         client, _ = admin_client
-        z = zone_with_members["zone"]
+        hub = hub_with_members["hub"]
         resp = client.post(reverse("broadcast-list"), {
             "audience":         "rider",
-            "zone":             z.id,
+            "hub":              hub.id,
             "recipient_filter": "all",
             "channels":         ["inapp"],
             "priority":         "high",
@@ -98,7 +98,7 @@ class TestBroadcasts:
         })
         assert resp.status_code == status.HTTP_201_CREATED
 
-    def test_broadcast_requires_zone_or_vertical(self, admin_client):
+    def test_broadcast_requires_hub_or_zone(self, admin_client):
         client, _ = admin_client
         resp = client.post(reverse("broadcast-list"), {
             "audience": "merchant",
@@ -107,12 +107,12 @@ class TestBroadcasts:
         })
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_send_broadcast_queues_task(self, admin_client, zone_with_members):
+    def test_send_broadcast_queues_task(self, admin_client, hub_with_members):
         client, _ = admin_client
-        z = zone_with_members["zone"]
+        hub = hub_with_members["hub"]
         create_resp = client.post(reverse("broadcast-list"), {
             "audience": "merchant",
-            "zone":     z.id,
+            "hub":      hub.id,
             "channels": ["whatsapp"],
             "body":     "Test message",
         })
@@ -122,13 +122,13 @@ class TestBroadcasts:
         assert resp.status_code == status.HTTP_200_OK
         assert "queued" in resp.data["detail"].lower()
 
-    def test_cannot_send_already_sent_broadcast(self, admin_client, zone_with_members):
+    def test_cannot_send_already_sent_broadcast(self, admin_client, hub_with_members):
         from apps.comms.models import Broadcast
         client, _ = admin_client
-        z = zone_with_members["zone"]
+        hub = hub_with_members["hub"]
         create_resp = client.post(reverse("broadcast-list"), {
             "audience": "merchant",
-            "zone":     z.id,
+            "hub":      hub.id,
             "channels": ["sms"],
             "body":     "Test",
         })
@@ -137,33 +137,33 @@ class TestBroadcasts:
         resp = client.post(reverse("broadcast-send", kwargs={"pk": bid}))
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_zone_captain_only_sees_own_broadcasts(self, db, zone_with_members):
-        z = zone_with_members["zone"]
-        from tests.factories import ZoneCaptainFactory
-        captain = ZoneCaptainFactory(zone=z)
+    def test_hub_captain_only_sees_own_broadcasts(self, db, hub_with_members):
+        hub = hub_with_members["hub"]
+        from tests.factories import HubCaptainFactory
+        captain = HubCaptainFactory(hub=hub)
         client = APIClient()
         login = client.post(reverse("auth-login"), {"username": captain.username, "password": "testpass123"})
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}")
 
-        # Create a broadcast in another zone
-        other_zone = ZoneFactory()
+        # Create a broadcast in another hub
+        other_hub = HubFactory()
         from apps.comms.models import Broadcast
         Broadcast.objects.create(
-            audience="merchant", zone=other_zone, channels=["sms"],
-            body="Other zone message", created_by=captain
+            audience="merchant", hub=other_hub, channels=["sms"],
+            body="Other hub message", created_by=captain
         )
         resp = client.get(reverse("broadcast-list"))
         assert resp.status_code == status.HTTP_200_OK
-        # Captain should not see other zone's broadcast
-        assert not any(b.get("zone") == other_zone.id for b in _results(resp.data))
+        # Captain should not see other hub's broadcast
+        assert not any(b.get("hub") == other_hub.id for b in _results(resp.data))
 
 
 @pytest.mark.django_db
 class TestRiderNotifications:
-    def test_rider_can_see_own_notifications(self, db, zone_with_members):
+    def test_rider_can_see_own_notifications(self, db, hub_with_members):
         from tests.factories import UserFactory
         from apps.comms.models import RiderInAppNotification
-        rider = zone_with_members["riders"][0]
+        rider = hub_with_members["riders"][0]
         rider_user = UserFactory(role="rider", rider_profile=rider)
 
         # Create a notification for this rider
@@ -181,10 +181,10 @@ class TestRiderNotifications:
         assert len(data) == 1
         assert data[0]["is_read"] is False
 
-    def test_mark_notification_read(self, db, zone_with_members):
+    def test_mark_notification_read(self, db, hub_with_members):
         from tests.factories import UserFactory
         from apps.comms.models import RiderInAppNotification
-        rider = zone_with_members["riders"][0]
+        rider = hub_with_members["riders"][0]
         rider_user = UserFactory(role="rider", rider_profile=rider)
         notif = RiderInAppNotification.objects.create(rider=rider, body="Test", priority="normal")
 

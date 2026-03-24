@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.db.models import Sum, Avg, Count, Q
 from django.utils import timezone
 from datetime import timedelta
-from .models import Vertical, Zone, Rider, Merchant, RiderSnapshot, MerchantSnapshot, Order
+from .models import Zone, Hub, Rider, Merchant, RiderSnapshot, MerchantSnapshot, Order
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
@@ -43,12 +43,12 @@ def get_date_range(period: str, custom_month: int | None = None):
 # ── Rider ────────────────────────────────────────────────────────────────────
 
 class RiderListSerializer(serializers.ModelSerializer):
-    zone_name = serializers.CharField(source="zone.name", read_only=True)
+    hub_name = serializers.CharField(source="hub.name", read_only=True)
     full_name = serializers.SerializerMethodField()
 
     class Meta:
         model  = Rider
-        fields = ["id", "full_name", "first_name", "last_name", "phone", "zone", "zone_name", "status", "joined_at"]
+        fields = ["id", "full_name", "first_name", "last_name", "phone", "hub", "hub_name", "status", "joined_at"]
 
     def get_full_name(self, obj):
         return obj.full_name
@@ -57,7 +57,7 @@ class RiderListSerializer(serializers.ModelSerializer):
 class RiderPerformanceSerializer(serializers.ModelSerializer):
     """Rider with aggregated metrics for a given date range."""
     full_name        = serializers.CharField()
-    zone_name        = serializers.CharField()
+    hub_name         = serializers.CharField()
     orders_completed = serializers.IntegerField()
     orders_rejected  = serializers.IntegerField()
     orders_failed    = serializers.IntegerField()
@@ -74,7 +74,7 @@ class RiderPerformanceSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Rider
         fields = [
-            "id", "full_name", "zone_name", "status",
+            "id", "full_name", "hub_name", "status",
             "orders_completed", "orders_rejected", "orders_failed",
             "revenue", "km_covered", "online_days",
             "avg_delivery_mins", "csat_avg", "ghost_minutes", "peak_orders",
@@ -83,14 +83,14 @@ class RiderPerformanceSerializer(serializers.ModelSerializer):
 
 
 class RiderDetailSerializer(serializers.ModelSerializer):
-    zone_name    = serializers.CharField(source="zone.name",    read_only=True)
-    vertical_name = serializers.CharField(source="zone.vertical.name", read_only=True)
+    hub_name     = serializers.CharField(source="hub.name",      read_only=True)
+    zone_name    = serializers.CharField(source="hub.zone.name", read_only=True)
     full_name    = serializers.SerializerMethodField()
 
     class Meta:
         model  = Rider
         fields = ["id", "full_name", "first_name", "last_name", "phone", "email",
-                  "zone", "zone_name", "vertical_name", "status", "joined_at", "bike_plate",
+                  "hub", "hub_name", "zone_name", "status", "joined_at", "bike_plate",
                   "created_at", "updated_at"]
 
     def get_full_name(self, obj):
@@ -100,17 +100,17 @@ class RiderDetailSerializer(serializers.ModelSerializer):
 # ── Merchant ─────────────────────────────────────────────────────────────────
 
 class MerchantListSerializer(serializers.ModelSerializer):
-    zone_name = serializers.CharField(source="zone.name", read_only=True)
+    hub_name = serializers.CharField(source="hub.name", read_only=True)
 
     class Meta:
         model  = Merchant
         fields = ["id", "business_name", "business_type", "owner_name",
-                  "phone", "zone", "zone_name", "status", "onboarded_at", "last_order_at"]
+                  "phone", "hub", "hub_name", "status", "onboarded_at", "last_order_at"]
 
 
 class MerchantDetailSerializer(serializers.ModelSerializer):
-    zone_name     = serializers.CharField(source="zone.name",            read_only=True)
-    vertical_name = serializers.CharField(source="zone.vertical.name",   read_only=True)
+    hub_name      = serializers.CharField(source="hub.name",      read_only=True)
+    zone_name     = serializers.CharField(source="hub.zone.name", read_only=True)
 
     class Meta:
         model  = Merchant
@@ -118,7 +118,7 @@ class MerchantDetailSerializer(serializers.ModelSerializer):
 
 
 class MerchantPerformanceSerializer(serializers.ModelSerializer):
-    zone_name         = serializers.CharField()
+    hub_name          = serializers.CharField()
     orders_placed     = serializers.IntegerField()
     orders_fulfilled  = serializers.IntegerField()
     orders_returned   = serializers.IntegerField()
@@ -130,22 +130,22 @@ class MerchantPerformanceSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Merchant
         fields = [
-            "id", "business_name", "business_type", "zone_name", "status",
+            "id", "business_name", "business_type", "hub_name", "status",
             "orders_placed", "orders_fulfilled", "orders_returned", "gross_revenue",
             "avg_order_value", "fulfillment_rate", "days_since_order",
         ]
 
 
-# ── Zone ─────────────────────────────────────────────────────────────────────
+# ── Hub (was Zone) ──────────────────────────────────────────────────────────
 
-class ZoneSerializer(serializers.ModelSerializer):
-    vertical_name = serializers.CharField(source="vertical.name", read_only=True)
-    rider_count   = serializers.SerializerMethodField()
+class HubSerializer(serializers.ModelSerializer):
+    zone_name      = serializers.CharField(source="zone.name", read_only=True)
+    rider_count    = serializers.SerializerMethodField()
     merchant_count = serializers.SerializerMethodField()
 
     class Meta:
-        model  = Zone
-        fields = ["id", "name", "slug", "vertical", "vertical_name",
+        model  = Hub
+        fields = ["id", "name", "slug", "zone", "zone_name",
                   "is_active", "order_target", "revenue_target",
                   "rider_count", "merchant_count",
                   "base_pay", "transport_pay", "commission_rate"]
@@ -157,14 +157,14 @@ class ZoneSerializer(serializers.ModelSerializer):
         return obj.merchants.filter(status__in=["active","watch"]).count()
 
 
-# ── Vertical ─────────────────────────────────────────────────────────────────
+# ── Zone (was Vertical) ────────────────────────────────────────────────────
 
-class VerticalSerializer(serializers.ModelSerializer):
-    zone_count = serializers.IntegerField(source="zones.count", read_only=True)
+class ZoneSerializer(serializers.ModelSerializer):
+    hub_count = serializers.IntegerField(source="hubs.count", read_only=True)
 
     class Meta:
-        model  = Vertical
-        fields = ["id", "name", "full_name", "color_hex", "is_active", "zone_count",
+        model  = Zone
+        fields = ["id", "name", "full_name", "color_hex", "is_active", "hub_count",
                   "base_pay", "transport_pay", "commission_rate"]
 
 
@@ -173,12 +173,12 @@ class VerticalSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     merchant_name = serializers.CharField(source="merchant.business_name", read_only=True)
     rider_name    = serializers.SerializerMethodField()
-    zone_name     = serializers.CharField(source="zone.name", read_only=True)
+    hub_name      = serializers.CharField(source="hub.name", read_only=True)
 
     class Meta:
         model  = Order
         fields = ["id", "reference", "status", "merchant", "merchant_name",
-                  "rider", "rider_name", "zone", "zone_name",
+                  "rider", "rider_name", "hub", "hub_name",
                   "pickup_address", "delivery_address", "delivery_fee", "order_value",
                   "km_distance", "csat_score", "rejection_reason", "failure_reason",
                   "created_at", "assigned_at", "picked_up_at", "delivered_at"]
@@ -190,7 +190,7 @@ class OrderSerializer(serializers.ModelSerializer):
 class OrderCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Order
-        fields = ["reference", "merchant", "zone", "pickup_address", "delivery_address",
+        fields = ["reference", "merchant", "hub", "pickup_address", "delivery_address",
                   "delivery_fee", "order_value"]
 
 

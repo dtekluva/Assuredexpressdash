@@ -2,7 +2,7 @@
 Factory Boy factories for all core models.
 Usage in tests:
     rider = RiderFactory()
-    zone  = ZoneFactory(vertical=VerticalFactory())
+    hub   = HubFactory(zone=ZoneFactory())
 """
 import factory
 from factory.django import DjangoModelFactory
@@ -14,12 +14,12 @@ import random
 fake = Faker()
 
 
-class VerticalFactory(DjangoModelFactory):
+class ZoneFactory(DjangoModelFactory):
     class Meta:
-        model = "core.Vertical"
+        model = "core.Zone"
 
-    name       = factory.Sequence(lambda n: f"V{n}")
-    full_name  = factory.Sequence(lambda n: f"Vertical {n} — Lagos")
+    name       = factory.Sequence(lambda n: f"Z{n}")
+    full_name  = factory.Sequence(lambda n: f"Zone {n} — Lagos")
     color_hex  = factory.LazyFunction(lambda: f"#{random.randint(0, 0xFFFFFF):06x}")
     is_active  = True
     base_pay   = 250_000
@@ -27,13 +27,13 @@ class VerticalFactory(DjangoModelFactory):
     commission_rate = Decimal("0.0110")
 
 
-class ZoneFactory(DjangoModelFactory):
+class HubFactory(DjangoModelFactory):
     class Meta:
-        model = "core.Zone"
+        model = "core.Hub"
 
-    vertical       = factory.SubFactory(VerticalFactory)
-    name           = factory.Sequence(lambda n: f"Zone {n}")
-    slug           = factory.Sequence(lambda n: f"zone-{n}")
+    zone           = factory.SubFactory(ZoneFactory)
+    name           = factory.Sequence(lambda n: f"Hub {n}")
+    slug           = factory.Sequence(lambda n: f"hub-{n}")
     is_active      = True
     order_target   = 2000
     revenue_target = 3_000_000
@@ -46,7 +46,7 @@ class RiderFactory(DjangoModelFactory):
     class Meta:
         model = "core.Rider"
 
-    zone       = factory.SubFactory(ZoneFactory)
+    hub        = factory.SubFactory(HubFactory)
     first_name = factory.LazyFunction(fake.first_name)
     last_name  = factory.LazyFunction(fake.last_name)
     phone      = factory.Sequence(lambda n: f"080{n:08d}")
@@ -59,7 +59,7 @@ class MerchantFactory(DjangoModelFactory):
     class Meta:
         model = "core.Merchant"
 
-    zone          = factory.SubFactory(ZoneFactory)
+    hub           = factory.SubFactory(HubFactory)
     business_name = factory.LazyFunction(lambda: f"{fake.company()} Store")
     business_type = "Food & Grocery"
     owner_name    = factory.LazyFunction(fake.name)
@@ -108,11 +108,11 @@ class UserFactory(DjangoModelFactory):
         return user
 
 
-class ZoneCaptainFactory(UserFactory):
-    role = "zone_captain"
+class HubCaptainFactory(UserFactory):
+    role = "hub_captain"
+    hub  = factory.SubFactory(HubFactory)
+
+
+class ZoneLeadFactory(UserFactory):
+    role = "zone_lead"
     zone = factory.SubFactory(ZoneFactory)
-
-
-class VerticalLeadFactory(UserFactory):
-    role     = "vertical_lead"
-    vertical = factory.SubFactory(VerticalFactory)

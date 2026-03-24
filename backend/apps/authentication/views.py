@@ -14,15 +14,15 @@ User = get_user_model()
 # ── Serializers ──────────────────────────────────────────────────────────────
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    vertical_name = serializers.CharField(source="vertical.name", read_only=True)
-    zone_name     = serializers.CharField(source="zone.name",     read_only=True)
+    zone_name = serializers.CharField(source="zone.name", read_only=True)
+    hub_name  = serializers.CharField(source="hub.name",  read_only=True)
 
     class Meta:
         model  = User
         fields = [
             "id", "username", "email", "first_name", "last_name",
-            "role", "phone", "avatar", "vertical", "vertical_name",
-            "zone", "zone_name", "last_seen",
+            "role", "phone", "avatar", "zone", "zone_name",
+            "hub", "hub_name", "last_seen",
         ]
         read_only_fields = ["id", "last_seen"]
 
@@ -32,10 +32,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        token["role"]     = user.role
-        token["name"]     = user.get_full_name()
-        token["vertical"] = user.vertical_id
-        token["zone"]     = user.zone_id
+        token["role"]  = user.role
+        token["name"]  = user.get_full_name()
+        token["zone"]  = user.zone_id
+        token["hub"]   = user.hub_id
         return token
 
     def validate(self, attrs):
@@ -63,25 +63,25 @@ class UpdateFCMTokenSerializer(serializers.Serializer):
 
 
 def _fetch_signup_options():
-    """Fetch verticals + zones from AXpress. Returns (verticals, zones) lists."""
-    from apps.core.axpress_client import get_verticals, get_vertical_detail
+    """Fetch zones + hubs from AXpress. Returns (zones, hubs) lists."""
+    from apps.core.axpress_client import get_zones, get_zone_detail
 
-    raw = get_verticals()
-    vert_list = raw if isinstance(raw, list) else raw.get("verticals", raw.get("results", []))
+    raw = get_zones()
+    zone_list = raw if isinstance(raw, list) else raw.get("verticals", raw.get("results", []))
 
-    verticals = []
     zones = []
-    for v in vert_list:
-        vid = v["id"]
-        vname = v.get("name", "")
-        verticals.append({"id": vid, "name": vname, "lead_name": v.get("lead_name", "")})
+    hubs = []
+    for z in zone_list:
+        zid = z["id"]
+        zname = z.get("name", "")
+        zones.append({"id": zid, "name": zname, "lead_name": z.get("lead_name", "")})
 
-        # Fetch detail to get zones
-        detail = get_vertical_detail(vid)
-        for z in detail.get("zones", []):
-            zones.append({"id": z["id"], "name": z.get("name", ""), "vertical_id": vid})
+        # Fetch detail to get hubs
+        detail = get_zone_detail(zid)
+        for h in detail.get("zones", []):
+            hubs.append({"id": h["id"], "name": h.get("name", ""), "zone_id": zid})
 
-    return verticals, zones
+    return zones, hubs
 
 
 class SignUpSerializer(serializers.Serializer):
@@ -91,13 +91,13 @@ class SignUpSerializer(serializers.Serializer):
     phone      = serializers.CharField(max_length=20)
     password   = serializers.CharField(min_length=8, write_only=True)
     role       = serializers.ChoiceField(choices=[
-        (User.Role.VERTICAL_LEAD, "Vertical Lead"),
-        (User.Role.ZONE_CAPTAIN, "Zone Captain"),
+        (User.Role.ZONE_LEAD, "Zone Lead"),
+        (User.Role.HUB_CAPTAIN, "Hub Captain"),
     ])
-    vertical   = serializers.CharField(help_text="AXpress vertical UUID")
-    zone       = serializers.CharField(
+    zone       = serializers.CharField(help_text="AXpress zone UUID (was vertical)")
+    hub        = serializers.CharField(
         required=False, allow_null=True, default=None,
-        help_text="AXpress zone UUID — required for zone_captain role",
+        help_text="AXpress hub UUID (was zone) — required for hub_captain role",
     )
 
     def validate_email(self, value):
@@ -109,47 +109,47 @@ class SignUpSerializer(serializers.Serializer):
         from apps.core.axpress_client import AXpressAPIError
 
         try:
-            verticals, zones = _fetch_signup_options()
+            zones, hubs = _fetch_signup_options()
         except AXpressAPIError:
             raise serializers.ValidationError("Unable to validate options. Please try again.")
 
-        # Validate vertical
-        vert_match = next((v for v in verticals if v["id"] == data["vertical"]), None)
-        if not vert_match:
-            raise serializers.ValidationError({"vertical": "Invalid vertical."})
-        data["_vertical_name"] = vert_match["name"]
+        # Validate zone
+        zone_match = next((z for z in zones if z["id"] == data["zone"]), None)
+        if not zone_match:
+            raise serializers.ValidationError({"zone": "Invalid zone."})
+        data["_zone_name"] = zone_match["name"]
 
-        # Zone captain must supply a valid zone in that vertical
-        if data["role"] == User.Role.ZONE_CAPTAIN:
-            if not data.get("zone"):
-                raise serializers.ValidationError({"zone": "Zone is required for zone captains."})
-            zone_match = next(
-                (z for z in zones if z["id"] == data["zone"] and z["vertical_id"] == data["vertical"]),
+        # Hub captain must supply a valid hub in that zone
+        if data["role"] == User.Role.HUB_CAPTAIN:
+            if not data.get("hub"):
+                raise serializers.ValidationError({"hub": "Hub is required for hub captains."})
+            hub_match = next(
+                (h for h in hubs if h["id"] == data["hub"] and h["zone_id"] == data["zone"]),
                 None,
             )
-            if not zone_match:
-                raise serializers.ValidationError({"zone": "Invalid zone or zone not in selected vertical."})
-            data["_zone_name"] = zone_match["name"]
+            if not hub_match:
+                raise serializers.ValidationError({"hub": "Invalid hub or hub not in selected zone."})
+            data["_hub_name"] = hub_match["name"]
         else:
-            data["_zone_name"] = None
+            data["_hub_name"] = None
 
         return data
 
     def create(self, validated_data):
-        from apps.core.models import Vertical, Zone
+        from apps.core.models import Zone, Hub
 
-        # Get or create local Vertical record so the FK works
-        local_vert, _ = Vertical.objects.get_or_create(
-            name=validated_data["_vertical_name"],
-            defaults={"full_name": validated_data["_vertical_name"]},
+        # Get or create local Zone record so the FK works
+        local_zone, _ = Zone.objects.get_or_create(
+            name=validated_data["_zone_name"],
+            defaults={"full_name": validated_data["_zone_name"]},
         )
 
-        local_zone = None
-        if validated_data.get("_zone_name"):
-            local_zone, _ = Zone.objects.get_or_create(
-                name=validated_data["_zone_name"],
-                vertical=local_vert,
-                defaults={"slug": validated_data["_zone_name"].lower().replace(" ", "-")},
+        local_hub = None
+        if validated_data.get("_hub_name"):
+            local_hub, _ = Hub.objects.get_or_create(
+                name=validated_data["_hub_name"],
+                zone=local_zone,
+                defaults={"slug": validated_data["_hub_name"].lower().replace(" ", "-")},
             )
 
         user = User.objects.create_user(
@@ -160,8 +160,8 @@ class SignUpSerializer(serializers.Serializer):
             last_name=validated_data["last_name"],
             phone=validated_data["phone"],
             role=validated_data["role"],
-            vertical=local_vert,
             zone=local_zone,
+            hub=local_hub,
             is_active=True,
         )
         return user
@@ -175,7 +175,7 @@ class LoginView(TokenObtainPairView):
 
 
 class SignUpView(APIView):
-    """Self-registration for Vertical Leads and Zone Captains."""
+    """Self-registration for Zone Leads and Hub Captains."""
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -227,21 +227,21 @@ class ChangePasswordView(APIView):
 
 
 class SignUpOptionsView(APIView):
-    """Public endpoint returning verticals + zones for sign-up dropdowns."""
+    """Public endpoint returning zones + hubs for sign-up dropdowns."""
     permission_classes = [AllowAny]
 
     def get(self, request):
         from apps.core.axpress_client import AXpressAPIError
 
         try:
-            verticals, zones = _fetch_signup_options()
+            zones, hubs = _fetch_signup_options()
         except AXpressAPIError:
             return Response(
                 {"detail": "Unable to fetch options. Please try again."},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
-        return Response({"verticals": verticals, "zones": zones})
+        return Response({"zones": zones, "hubs": hubs})
 
 
 class UpdateFCMTokenView(APIView):

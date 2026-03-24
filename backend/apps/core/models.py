@@ -8,13 +8,18 @@ The following models are NOW REDUNDANT for read operations because the main
 AXpress backend owns this data and the OCC consumes it via API calls
 (see axpress_client.py):
 
-  - Vertical        → main backend: dispatcher.Vertical
-  - Zone            → main backend: dispatcher.Zone
-  - Rider           → main backend: dispatcher.Rider + riders app
-  - Merchant        → main backend: dispatcher.Merchant
-  - RiderSnapshot   → main backend: RiderDailySnapshot (Celery-aggregated)
-  - MerchantSnapshot→ main backend: MerchantDailySnapshot (Celery-aggregated)
-  - Order           → main backend: orders.Order
+  - Zone (AXpress: Vertical)  → main backend: dispatcher.Vertical
+  - Hub  (AXpress: Zone)      → main backend: dispatcher.Zone
+  - Rider                     → main backend: dispatcher.Rider + riders app
+  - Merchant                  → main backend: dispatcher.Merchant
+  - RiderSnapshot             → main backend: RiderDailySnapshot (Celery-aggregated)
+  - MerchantSnapshot          → main backend: MerchantDailySnapshot (Celery-aggregated)
+  - Order                     → main backend: orders.Order
+
+NAMING NOTE: The business uses "Zone" (was Vertical) and "Relay Hub" (was Zone).
+The AXpress API still uses the old names (verticals, zones). This OCC backend
+uses the NEW business terminology in code while translating to old API names
+in axpress_client.py.
 
 These models are kept temporarily so that:
   1. Existing migrations don't break.
@@ -23,8 +28,7 @@ These models are kept temporarily so that:
 
 MIGRATION PATH: Once the comms app is updated to reference riders/merchants
 by their main-backend IDs (stored as CharField/UUIDField) instead of local
-FKs, these models can be dropped entirely. Until then, they serve as a
-local cache / reference table that the seed command populates.
+FKs, these models can be dropped entirely.
 """
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -32,8 +36,8 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 # ── Reference / Config ────────────────────────────────────────────────────────
 
-class Vertical(models.Model):
-    """One of the four regional verticals, managed by a Vertical Lead."""
+class Zone(models.Model):
+    """One of the regional zones (was 'Vertical'), managed by a Zone Lead."""
     name      = models.CharField(max_length=100)
     full_name = models.CharField(max_length=200)
     color_hex = models.CharField(max_length=7, default="#3B82F6")
@@ -53,9 +57,9 @@ class Vertical(models.Model):
         return self.full_name
 
 
-class Zone(models.Model):
-    """A delivery zone within a vertical, managed by a Zone Captain."""
-    vertical   = models.ForeignKey(Vertical, on_delete=models.PROTECT, related_name="zones")
+class Hub(models.Model):
+    """A relay hub (was 'Zone') within a zone, managed by a Hub Captain."""
+    zone       = models.ForeignKey(Zone, on_delete=models.PROTECT, related_name="hubs")
     name       = models.CharField(max_length=100)
     slug       = models.SlugField(unique=True)
     is_active  = models.BooleanField(default=True)
@@ -71,23 +75,23 @@ class Zone(models.Model):
     revenue_target = models.PositiveBigIntegerField(default=3_000_000)
 
     class Meta:
-        ordering = ["vertical", "name"]
+        ordering = ["zone", "name"]
         db_table = "core_zones"
 
     def __str__(self):
-        return f"{self.vertical.name} — {self.name}"
+        return f"{self.zone.name} — {self.name}"
 
 
 # ── Operational Entities ──────────────────────────────────────────────────────
 
 class Rider(models.Model):
-    """A delivery rider assigned to a zone."""
+    """A delivery rider assigned to a hub."""
     class Status(models.TextChoices):
         ACTIVE   = "active",   "Active"
         INACTIVE = "inactive", "Inactive"
         SUSPENDED = "suspended", "Suspended"
 
-    zone       = models.ForeignKey(Zone, on_delete=models.PROTECT, related_name="riders")
+    hub        = models.ForeignKey(Hub, on_delete=models.PROTECT, related_name="riders")
     first_name = models.CharField(max_length=100)
     last_name  = models.CharField(max_length=100)
     phone      = models.CharField(max_length=20, unique=True)
@@ -99,11 +103,11 @@ class Rider(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering  = ["zone", "last_name", "first_name"]
+        ordering  = ["hub", "last_name", "first_name"]
         db_table  = "core_riders"
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} ({self.zone.name})"
+        return f"{self.first_name} {self.last_name} ({self.hub.name})"
 
     @property
     def full_name(self):
@@ -118,7 +122,7 @@ class Merchant(models.Model):
         INACTIVE = "inactive", "Inactive"
         CHURNED  = "churned",  "Churned"
 
-    zone         = models.ForeignKey(Zone, on_delete=models.PROTECT, related_name="merchants")
+    hub          = models.ForeignKey(Hub, on_delete=models.PROTECT, related_name="merchants")
     business_name = models.CharField(max_length=200)
     business_type = models.CharField(max_length=100)
     owner_name   = models.CharField(max_length=200)
@@ -134,11 +138,11 @@ class Merchant(models.Model):
     updated_at   = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering  = ["zone", "business_name"]
+        ordering  = ["hub", "business_name"]
         db_table  = "core_merchants"
 
     def __str__(self):
-        return f"{self.business_name} ({self.zone.name})"
+        return f"{self.business_name} ({self.hub.name})"
 
 
 # ── Performance Data ──────────────────────────────────────────────────────────
@@ -231,7 +235,7 @@ class Order(models.Model):
     reference    = models.CharField(max_length=50, unique=True)
     merchant     = models.ForeignKey(Merchant, on_delete=models.PROTECT, related_name="orders")
     rider        = models.ForeignKey(Rider, on_delete=models.SET_NULL, null=True, blank=True, related_name="orders")
-    zone         = models.ForeignKey(Zone, on_delete=models.PROTECT, related_name="orders")
+    hub          = models.ForeignKey(Hub, on_delete=models.PROTECT, related_name="orders")
     status       = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
 
     pickup_address   = models.TextField()
@@ -258,7 +262,7 @@ class Order(models.Model):
         indexes  = [
             models.Index(fields=["rider", "status"]),
             models.Index(fields=["merchant", "status"]),
-            models.Index(fields=["zone", "created_at"]),
+            models.Index(fields=["hub", "created_at"]),
         ]
 
     def __str__(self):

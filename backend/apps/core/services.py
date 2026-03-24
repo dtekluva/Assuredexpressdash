@@ -114,7 +114,7 @@ def compute_rider_metrics(rider: Rider, start: date, end: date, detailed: bool =
     result = {
         "id":               rider.id,
         "full_name":        rider.full_name,
-        "zone_name":        rider.zone.name,
+        "hub_name":         rider.hub.name,
         "status":           rider.status,
         "orders_completed": orders,
         "orders_rejected":  agg["orders_rejected"],
@@ -167,7 +167,7 @@ def compute_merchant_metrics(merchant: Merchant, start: date, end: date, detaile
         "id":               merchant.id,
         "business_name":    merchant.business_name,
         "business_type":    merchant.business_type,
-        "zone_name":        merchant.zone.name,
+        "hub_name":         merchant.hub.name,
         "status":           merchant.status,
         "orders_placed":    agg["orders_placed"],
         "orders_fulfilled": agg["orders_fulfilled"],
@@ -227,14 +227,14 @@ def _monthly_merchant_history(merchant: Merchant, months: int = 5) -> list:
     return [{"month": r["month"].strftime("%b"), "orders": r["orders"], "revenue": r["revenue"]} for r in rows[-months:]]
 
 
-def aggregate_zone_summary(zone_id: int, start: date, end: date) -> dict:
-    """Used by WebSocket consumers to push live zone updates."""
-    from .models import Zone
-    zone = Zone.objects.get(id=zone_id)
-    snaps = RiderSnapshot.objects.filter(rider__zone=zone, date__range=[start, end])
+def aggregate_hub_summary(hub_id: int, start: date, end: date) -> dict:
+    """Used by WebSocket consumers to push live hub updates."""
+    from .models import Hub
+    hub = Hub.objects.get(id=hub_id)
+    snaps = RiderSnapshot.objects.filter(rider__hub=hub, date__range=[start, end])
     agg = snaps.aggregate(
         orders  = Coalesce(Sum("orders_completed"), 0),
         revenue = Coalesce(Sum("revenue_generated"), 0),
     )
-    pct = round((agg["orders"] / (zone.order_target or 1)) * 100)
-    return {"zone_id": zone_id, "orders": agg["orders"], "revenue": agg["revenue"], "pct": pct}
+    pct = round((agg["orders"] / (hub.order_target or 1)) * 100)
+    return {"hub_id": hub_id, "orders": agg["orders"], "revenue": agg["revenue"], "pct": pct}

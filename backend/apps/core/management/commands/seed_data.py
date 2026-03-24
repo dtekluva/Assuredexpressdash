@@ -1,7 +1,7 @@
 """
 python manage.py seed_data
 
-Populates the database with all 4 verticals, 21 zones, riders,
+Populates the database with all 4 zones, 21 hubs, riders,
 200 merchants, and 6 months of synthetic snapshot data for development.
 """
 import random
@@ -11,19 +11,19 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from django.utils.text import slugify
 from apps.core.models import (
-    Vertical, Zone, Rider, Merchant, RiderSnapshot, MerchantSnapshot
+    Zone, Hub, Rider, Merchant, RiderSnapshot, MerchantSnapshot
 )
 
 User = get_user_model()
 
-VERTICALS = [
+ZONES = [
     {"name": "Dennis",     "full_name": "Dennis — Island & Lekki Corridor", "color_hex": "#3B82F6"},
     {"name": "Seun",       "full_name": "Seun — Central Mainland",          "color_hex": "#10B981"},
     {"name": "Erinfolami", "full_name": "Erinfolami — Southwest Mainland",  "color_hex": "#A855F7"},
     {"name": "Mary",       "full_name": "Mary — North & Ikorodu",           "color_hex": "#F59E0B"},
 ]
 
-ZONES_PER_VERTICAL = [
+HUBS_PER_ZONE = [
     ["Osapa/Jakande", "Awoyaya", "Ajah", "Obalende"],
     ["Oshodi", "Oyingbo", "Tejuosho", "Sabo", "Bariga", "Ajegunle"],
     ["Festac", "Iyana ipaja/egbeda", "Ikotun", "Tradefair", "Iyana Iba", "Ayobo"],
@@ -67,8 +67,8 @@ class Command(BaseCommand):
             RiderSnapshot.objects.all().delete()
             Merchant.objects.all().delete()
             Rider.objects.all().delete()
+            Hub.objects.all().delete()
             Zone.objects.all().delete()
-            Vertical.objects.all().delete()
             User.objects.filter(is_superuser=False).delete()
 
         self.stdout.write("Creating superuser admin…")
@@ -76,40 +76,40 @@ class Command(BaseCommand):
             User.objects.create_superuser("admin", "admin@assuredexpress.ng", "admin123",
                                           first_name="Admin", last_name="User")
 
-        self.stdout.write("Creating verticals…")
-        verticals = []
-        for i, vdata in enumerate(VERTICALS):
-            v, _ = Vertical.objects.get_or_create(name=vdata["name"], defaults={
-                **vdata,
+        self.stdout.write("Creating zones…")
+        zones = []
+        for i, zdata in enumerate(ZONES):
+            z, _ = Zone.objects.get_or_create(name=zdata["name"], defaults={
+                **zdata,
                 "base_pay": 250_000,
                 "transport_pay": 80_000,
                 "commission_rate": Decimal("0.0110"),
             })
-            verticals.append(v)
+            zones.append(z)
 
-        self.stdout.write("Creating zones, riders, merchants…")
+        self.stdout.write("Creating hubs, riders, merchants…")
         rng = random.Random(42)
 
-        for vi, vertical in enumerate(verticals):
-            # Create vertical lead user
-            lead_username = f"lead_{vertical.name.lower()}"
+        for zi, zone in enumerate(zones):
+            # Create zone lead user
+            lead_username = f"lead_{zone.name.lower()}"
             lead, _ = User.objects.get_or_create(username=lead_username, defaults={
-                "first_name": vertical.name,
+                "first_name": zone.name,
                 "last_name": "Lead",
                 "email": f"{lead_username}@assuredexpress.ng",
-                "role": "vertical_lead",
-                "vertical": vertical,
+                "role": "zone_lead",
+                "zone": zone,
             })
             if not lead.has_usable_password():
                 lead.set_password("demo1234")
                 lead.save()
 
-            for zi, zone_name in enumerate(ZONES_PER_VERTICAL[vi]):
-                zone, _ = Zone.objects.get_or_create(
-                    vertical=vertical,
-                    name=zone_name,
+            for hi, hub_name in enumerate(HUBS_PER_ZONE[zi]):
+                hub, _ = Hub.objects.get_or_create(
+                    zone=zone,
+                    name=hub_name,
                     defaults={
-                        "slug": slugify(f"{vertical.name}-{zone_name}"),
+                        "slug": slugify(f"{zone.name}-{hub_name}"),
                         "order_target": 2000,
                         "revenue_target": 3_000_000,
                         "base_pay": 50_000,
@@ -118,24 +118,24 @@ class Command(BaseCommand):
                     }
                 )
 
-                # Captain user
-                gi = vi * 5 + zi
+                # Hub captain user
+                gi = zi * 5 + hi
                 cap_first = RIDER_FIRST[gi % len(RIDER_FIRST)]
                 cap_last  = RIDER_LAST[gi % len(RIDER_LAST)]
-                cap_username = f"captain_{zone.slug}"
+                cap_username = f"captain_{hub.slug}"
                 cap, _ = User.objects.get_or_create(username=cap_username, defaults={
                     "first_name": cap_first,
                     "last_name": cap_last,
                     "email": f"{cap_username}@assuredexpress.ng",
-                    "role": "zone_captain",
-                    "vertical": vertical,
+                    "role": "hub_captain",
                     "zone": zone,
+                    "hub": hub,
                 })
                 if not cap.has_usable_password():
                     cap.set_password("demo1234")
                     cap.save()
 
-                # 5 riders per zone
+                # 5 riders per hub
                 riders = []
                 for ri in range(5):
                     seed = gi * 31 + ri * 17 + 7
@@ -143,7 +143,7 @@ class Command(BaseCommand):
                     r_last  = RIDER_LAST[(seed * 7 + ri) % len(RIDER_LAST)]
                     phone   = f"080{rng.randint(10000000, 99999999)}"
                     rider, _ = Rider.objects.get_or_create(phone=phone, defaults={
-                        "zone": zone,
+                        "hub": hub,
                         "first_name": r_first,
                         "last_name": r_last,
                         "email": f"rider.{phone}@assuredexpress.ng",
@@ -152,12 +152,12 @@ class Command(BaseCommand):
                     })
                     riders.append(rider)
 
-                # 10 merchants per zone
+                # 10 merchants per hub
                 for mi in range(10):
                     seed = gi * 53 + mi * 19 + 41
                     m_phone = f"070{rng.randint(10000000, 99999999)}"
                     merchant, _ = Merchant.objects.get_or_create(phone=m_phone, defaults={
-                        "zone": zone,
+                        "hub": hub,
                         "business_name": MERCHANT_NAMES[mi % len(MERCHANT_NAMES)],
                         "business_type": BUSINESS_TYPES[mi % len(BUSINESS_TYPES)],
                         "owner_name": f"{RIDER_FIRST[(seed+mi)%len(RIDER_FIRST)]} {RIDER_LAST[(seed*2+mi)%len(RIDER_LAST)]}",
@@ -229,8 +229,8 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(
             f"\n✅ Seed complete!\n"
-            f"   Verticals: {Vertical.objects.count()}\n"
             f"   Zones:     {Zone.objects.count()}\n"
+            f"   Hubs:      {Hub.objects.count()}\n"
             f"   Riders:    {Rider.objects.count()}\n"
             f"   Merchants: {Merchant.objects.count()}\n"
             f"   Rider snapshots:    {RiderSnapshot.objects.count()}\n"

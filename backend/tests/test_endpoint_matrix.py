@@ -15,8 +15,8 @@ from tests.factories import (
     RiderFactory,
     RiderSnapshotFactory,
     UserFactory,
-    VerticalFactory,
     ZoneFactory,
+    HubFactory,
 )
 
 
@@ -30,10 +30,10 @@ def _auth_client(username: str, password: str):
 
 @pytest.mark.django_db
 def test_all_api_endpoints_smoke():
-    vertical = VerticalFactory()
-    zone = ZoneFactory(vertical=vertical)
-    rider = RiderFactory(zone=zone, status="active")
-    merchant = MerchantFactory(zone=zone, status="active")
+    zone = ZoneFactory()
+    hub = HubFactory(zone=zone)
+    rider = RiderFactory(hub=hub, status="active")
+    merchant = MerchantFactory(hub=hub, status="active")
     RiderSnapshotFactory(rider=rider, date=date.today())
 
     admin = UserFactory(role="super_admin", password="strongpass99")
@@ -56,8 +56,8 @@ def test_all_api_endpoints_smoke():
             "last_name": admin.last_name,
             "role": admin.role,
             "phone": "08087654321",
-            "vertical": None,
             "zone": None,
+            "hub": None,
             "last_seen": None,
         },
         format="json",
@@ -75,17 +75,17 @@ def test_all_api_endpoints_smoke():
 
     # Core readonly/custom endpoints
     assert admin_client.get(reverse("dashboard-summary"), {"period": "today"}).status_code == 200
-    assert admin_client.get(reverse("leaderboard"), {"scope": "zones"}).status_code == 200
-    assert admin_client.get(reverse("vertical-list")).status_code == 200
-    assert admin_client.get(reverse("vertical-detail", kwargs={"pk": vertical.id})).status_code == 200
-    assert admin_client.get(reverse("vertical-performance", kwargs={"pk": vertical.id})).status_code == 200
+    assert admin_client.get(reverse("leaderboard"), {"scope": "hubs"}).status_code == 200
     assert admin_client.get(reverse("zone-list")).status_code == 200
     assert admin_client.get(reverse("zone-detail", kwargs={"pk": zone.id})).status_code == 200
     assert admin_client.get(reverse("zone-performance", kwargs={"pk": zone.id})).status_code == 200
-    assert admin_client.get(reverse("rider-list"), {"zone": zone.id}).status_code == 200
+    assert admin_client.get(reverse("hub-list")).status_code == 200
+    assert admin_client.get(reverse("hub-detail", kwargs={"pk": hub.id})).status_code == 200
+    assert admin_client.get(reverse("hub-performance", kwargs={"pk": hub.id})).status_code == 200
+    assert admin_client.get(reverse("rider-list"), {"hub": hub.id}).status_code == 200
     assert admin_client.get(reverse("rider-performance", kwargs={"pk": rider.id})).status_code == 200
     assert admin_client.get(reverse("rider-orders", kwargs={"pk": rider.id})).status_code == 200
-    assert admin_client.get(reverse("merchant-list"), {"zone": zone.id}).status_code == 200
+    assert admin_client.get(reverse("merchant-list"), {"hub": hub.id}).status_code == 200
     assert admin_client.get(reverse("merchant-performance", kwargs={"pk": merchant.id})).status_code == 200
     assert admin_client.get(reverse("order-list")).status_code == 200
 
@@ -93,7 +93,7 @@ def test_all_api_endpoints_smoke():
     rider_create = admin_client.post(
         reverse("rider-list"),
         {
-            "zone": zone.id,
+            "hub": hub.id,
             "first_name": "Postman",
             "last_name": "Rider",
             "phone": "08055550001",
@@ -111,7 +111,7 @@ def test_all_api_endpoints_smoke():
     assert admin_client.put(
         reverse("rider-detail", kwargs={"pk": rider_id}),
         {
-            "zone": zone.id,
+            "hub": hub.id,
             "first_name": "Postman",
             "last_name": "Rider",
             "phone": "08055550001",
@@ -126,7 +126,7 @@ def test_all_api_endpoints_smoke():
     merchant_create = admin_client.post(
         reverse("merchant-list"),
         {
-            "zone": zone.id,
+            "hub": hub.id,
             "business_name": "Postman Foods",
             "business_type": "Food",
             "owner_name": "Test Owner",
@@ -143,7 +143,7 @@ def test_all_api_endpoints_smoke():
     assert admin_client.put(
         reverse("merchant-detail", kwargs={"pk": merchant_id}),
         {
-            "zone": zone.id,
+            "hub": hub.id,
             "business_name": "Postman Foods",
             "business_type": "Food",
             "owner_name": "Test Owner",
@@ -159,7 +159,7 @@ def test_all_api_endpoints_smoke():
         {
             "reference": "PM-ORDER-001",
             "merchant": merchant.id,
-            "zone": zone.id,
+            "hub": hub.id,
             "pickup_address": "1 Pickup Street",
             "delivery_address": "2 Delivery Street",
             "delivery_fee": 1500,
@@ -208,7 +208,7 @@ def test_all_api_endpoints_smoke():
         reverse("broadcast-list"),
         {
             "audience": "merchant",
-            "zone": zone.id,
+            "hub": hub.id,
             "recipient_filter": "all",
             "channels": ["sms"],
             "priority": "normal",
@@ -224,7 +224,7 @@ def test_all_api_endpoints_smoke():
         reverse("broadcast-detail", kwargs={"pk": broadcast_id}),
         {
             "audience": "merchant",
-            "zone": zone.id,
+            "hub": hub.id,
             "recipient_filter": "all",
             "channels": ["sms"],
             "priority": "high",

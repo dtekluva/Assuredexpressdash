@@ -9,8 +9,8 @@ class User(AbstractUser):
     """
     class Role(models.TextChoices):
         SUPER_ADMIN    = "super_admin",    "Super Admin"
-        VERTICAL_LEAD  = "vertical_lead",  "Vertical Lead"
-        ZONE_CAPTAIN   = "zone_captain",   "Zone Captain"
+        ZONE_LEAD      = "zone_lead",      "Zone Lead"
+        HUB_CAPTAIN    = "hub_captain",    "Hub Captain"
         OPS_ANALYST    = "ops_analyst",    "Ops Analyst"
         RIDER          = "rider",          "Rider"
 
@@ -18,13 +18,15 @@ class User(AbstractUser):
     phone       = models.CharField(max_length=20, blank=True)
     avatar      = models.ImageField(upload_to="avatars/", blank=True, null=True)
     # Link to operational entity
-    vertical    = models.ForeignKey(
-        "core.Vertical", on_delete=models.SET_NULL, null=True, blank=True,
-        related_name="lead_users", help_text="Set for vertical_lead role"
-    )
     zone        = models.ForeignKey(
         "core.Zone", on_delete=models.SET_NULL, null=True, blank=True,
-        related_name="captain_users", help_text="Set for zone_captain role"
+        related_name="lead_users", help_text="Set for zone_lead role",
+        db_column="vertical_id",
+    )
+    hub         = models.ForeignKey(
+        "core.Hub", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="captain_users", help_text="Set for hub_captain role",
+        db_column="zone_id",
     )
     rider_profile = models.OneToOneField(
         "core.Rider", on_delete=models.SET_NULL, null=True, blank=True,

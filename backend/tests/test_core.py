@@ -8,8 +8,8 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 from tests.factories import (
-    UserFactory, VerticalFactory, ZoneFactory, RiderFactory,
-    MerchantFactory, RiderSnapshotFactory, ZoneCaptainFactory, VerticalLeadFactory,
+    UserFactory, ZoneFactory, HubFactory, RiderFactory,
+    MerchantFactory, RiderSnapshotFactory, HubCaptainFactory, ZoneLeadFactory,
 )
 
 def _results(data):
@@ -26,44 +26,44 @@ def admin_client(db):
 
 
 @pytest.fixture
-def zone_setup(db):
-    """Create a complete vertical → zone → riders + merchants structure."""
-    v     = VerticalFactory()
-    zone  = ZoneFactory(vertical=v)
-    riders = [RiderFactory(zone=zone) for _ in range(3)]
-    merchants = [MerchantFactory(zone=zone) for _ in range(5)]
-    return {"vertical": v, "zone": zone, "riders": riders, "merchants": merchants}
+def hub_setup(db):
+    """Create a complete zone -> hub -> riders + merchants structure."""
+    zone  = ZoneFactory()
+    hub   = HubFactory(zone=zone)
+    riders = [RiderFactory(hub=hub) for _ in range(3)]
+    merchants = [MerchantFactory(hub=hub) for _ in range(5)]
+    return {"zone": zone, "hub": hub, "riders": riders, "merchants": merchants}
 
 
 @pytest.mark.django_db
 class TestDashboardEndpoint:
-    def test_returns_200_for_authenticated_user(self, admin_client, zone_setup):
+    def test_returns_200_for_authenticated_user(self, admin_client, hub_setup):
         resp = admin_client.get(reverse("dashboard-summary"))
         assert resp.status_code == status.HTTP_200_OK
 
-    def test_contains_expected_fields(self, admin_client, zone_setup):
+    def test_contains_expected_fields(self, admin_client, hub_setup):
         resp = admin_client.get(reverse("dashboard-summary"))
         data = resp.data
         assert "total_orders"     in data
         assert "total_revenue"    in data
         assert "active_riders"    in data
         assert "active_merchants" in data
-        assert "verticals"        in data
+        assert "zones"            in data
         assert "period"           in data
 
-    def test_period_filter_today(self, admin_client, zone_setup):
+    def test_period_filter_today(self, admin_client, hub_setup):
         resp = admin_client.get(reverse("dashboard-summary"), {"period": "today"})
         assert resp.status_code == status.HTTP_200_OK
         assert resp.data["period"]["start"] == date.today()
         assert resp.data["period"]["end"]   == date.today()
 
-    def test_unauthenticated_returns_401(self, db, zone_setup):
+    def test_unauthenticated_returns_401(self, db, hub_setup):
         resp = APIClient().get(reverse("dashboard-summary"))
         assert resp.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_zone_captain_only_sees_own_zone(self, db, zone_setup):
-        z = zone_setup["zone"]
-        captain = ZoneCaptainFactory(zone=z)
+    def test_hub_captain_only_sees_own_hub(self, db, hub_setup):
+        hub = hub_setup["hub"]
+        captain = HubCaptainFactory(hub=hub)
         client = APIClient()
         login = client.post(reverse("auth-login"), {"username": captain.username, "password": "testpass123"})
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}")
@@ -72,48 +72,48 @@ class TestDashboardEndpoint:
 
 
 @pytest.mark.django_db
-class TestVerticalEndpoints:
-    def test_list_verticals(self, admin_client, zone_setup):
-        resp = admin_client.get(reverse("vertical-list"))
-        assert resp.status_code == status.HTTP_200_OK
-        # At least our test vertical is in results
-        assert len(resp.data) >= 1
-
-    def test_vertical_performance(self, admin_client, zone_setup):
-        v_id = zone_setup["vertical"].id
-        # Create some snapshots
-        for rider in zone_setup["riders"]:
-            RiderSnapshotFactory(rider=rider, date=date.today())
-
-        resp = admin_client.get(
-            reverse("vertical-performance", kwargs={"pk": v_id}),
-            {"period": "today"}
-        )
-        assert resp.status_code == status.HTTP_200_OK
-        assert "zones" in resp.data
-        assert "total_orders" in resp.data
-
-
-@pytest.mark.django_db
 class TestZoneEndpoints:
-    def test_list_zones(self, admin_client, zone_setup):
+    def test_list_zones(self, admin_client, hub_setup):
         resp = admin_client.get(reverse("zone-list"))
         assert resp.status_code == status.HTTP_200_OK
+        # At least our test zone is in results
+        assert len(resp.data) >= 1
 
-    def test_filter_zones_by_vertical(self, admin_client, zone_setup):
-        v_id = zone_setup["vertical"].id
-        resp = admin_client.get(reverse("zone-list"), {"vertical": v_id})
-        assert resp.status_code == status.HTTP_200_OK
-        zone_ids = [z["id"] for z in _results(resp.data)]
-        assert zone_setup["zone"].id in zone_ids
-
-    def test_zone_performance_returns_riders_and_merchants(self, admin_client, zone_setup):
-        z_id = zone_setup["zone"].id
-        for rider in zone_setup["riders"]:
+    def test_zone_performance(self, admin_client, hub_setup):
+        z_id = hub_setup["zone"].id
+        # Create some snapshots
+        for rider in hub_setup["riders"]:
             RiderSnapshotFactory(rider=rider, date=date.today())
 
         resp = admin_client.get(
             reverse("zone-performance", kwargs={"pk": z_id}),
+            {"period": "today"}
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        assert "hubs" in resp.data
+        assert "total_orders" in resp.data
+
+
+@pytest.mark.django_db
+class TestHubEndpoints:
+    def test_list_hubs(self, admin_client, hub_setup):
+        resp = admin_client.get(reverse("hub-list"))
+        assert resp.status_code == status.HTTP_200_OK
+
+    def test_filter_hubs_by_zone(self, admin_client, hub_setup):
+        z_id = hub_setup["zone"].id
+        resp = admin_client.get(reverse("hub-list"), {"zone": z_id})
+        assert resp.status_code == status.HTTP_200_OK
+        hub_ids = [h["id"] for h in _results(resp.data)]
+        assert hub_setup["hub"].id in hub_ids
+
+    def test_hub_performance_returns_riders_and_merchants(self, admin_client, hub_setup):
+        h_id = hub_setup["hub"].id
+        for rider in hub_setup["riders"]:
+            RiderSnapshotFactory(rider=rider, date=date.today())
+
+        resp = admin_client.get(
+            reverse("hub-performance", kwargs={"pk": h_id}),
             {"period": "today"}
         )
         assert resp.status_code == status.HTTP_200_OK
@@ -124,19 +124,19 @@ class TestZoneEndpoints:
 
 @pytest.mark.django_db
 class TestRiderEndpoints:
-    def test_list_riders(self, admin_client, zone_setup):
+    def test_list_riders(self, admin_client, hub_setup):
         resp = admin_client.get(reverse("rider-list"))
         assert resp.status_code == status.HTTP_200_OK
 
-    def test_filter_riders_by_zone(self, admin_client, zone_setup):
-        z_id = zone_setup["zone"].id
-        resp = admin_client.get(reverse("rider-list"), {"zone": z_id})
+    def test_filter_riders_by_hub(self, admin_client, hub_setup):
+        h_id = hub_setup["hub"].id
+        resp = admin_client.get(reverse("rider-list"), {"hub": h_id})
         returned_ids = [r["id"] for r in _results(resp.data)]
-        for rider in zone_setup["riders"]:
+        for rider in hub_setup["riders"]:
             assert rider.id in returned_ids
 
-    def test_rider_performance_endpoint(self, admin_client, zone_setup):
-        rider = zone_setup["riders"][0]
+    def test_rider_performance_endpoint(self, admin_client, hub_setup):
+        rider = hub_setup["riders"][0]
         RiderSnapshotFactory(rider=rider, date=date.today())
         resp = admin_client.get(
             reverse("rider-performance", kwargs={"pk": rider.id}),
@@ -147,8 +147,8 @@ class TestRiderEndpoints:
         assert "pct"              in resp.data
         assert "flags"            in resp.data
 
-    def test_rider_attainment_pct_calculation(self, admin_client, zone_setup):
-        rider = zone_setup["riders"][0]
+    def test_rider_attainment_pct_calculation(self, admin_client, hub_setup):
+        rider = hub_setup["riders"][0]
         # 200 orders out of 400 target = 50%
         for i in range(10):
             RiderSnapshotFactory(rider=rider, date=date(2025, 1, i + 1), orders_completed=20)
@@ -162,13 +162,13 @@ class TestRiderEndpoints:
 
 @pytest.mark.django_db
 class TestMerchantEndpoints:
-    def test_list_merchants(self, admin_client, zone_setup):
+    def test_list_merchants(self, admin_client, hub_setup):
         resp = admin_client.get(reverse("merchant-list"))
         assert resp.status_code == status.HTTP_200_OK
 
-    def test_filter_by_status(self, admin_client, zone_setup):
+    def test_filter_by_status(self, admin_client, hub_setup):
         # Make one merchant inactive
-        m = zone_setup["merchants"][0]
+        m = hub_setup["merchants"][0]
         m.status = "inactive"
         m.save()
 
@@ -176,10 +176,10 @@ class TestMerchantEndpoints:
         assert resp.status_code == status.HTTP_200_OK
         assert any(r["id"] == m.id for r in _results(resp.data))
 
-    def test_create_merchant(self, admin_client, zone_setup):
-        zone_id = zone_setup["zone"].id
+    def test_create_merchant(self, admin_client, hub_setup):
+        hub_id = hub_setup["hub"].id
         payload = {
-            "zone":          zone_id,
+            "hub":           hub_id,
             "business_name": "Test Bakery",
             "business_type": "Bakery",
             "owner_name":    "Ade Bello",
@@ -193,15 +193,15 @@ class TestMerchantEndpoints:
 
 @pytest.mark.django_db
 class TestLeaderboardEndpoint:
-    def test_zone_leaderboard_is_sorted_by_pct(self, admin_client, zone_setup):
-        for rider in zone_setup["riders"]:
+    def test_hub_leaderboard_is_sorted_by_pct(self, admin_client, hub_setup):
+        for rider in hub_setup["riders"]:
             RiderSnapshotFactory(rider=rider, date=date.today())
 
-        resp = admin_client.get(reverse("leaderboard"), {"scope": "zones", "period": "today"})
+        resp = admin_client.get(reverse("leaderboard"), {"scope": "hubs", "period": "today"})
         assert resp.status_code == status.HTTP_200_OK
-        pcts = [z["pct"] for z in resp.data]
+        pcts = [h["pct"] for h in resp.data]
         assert pcts == sorted(pcts, reverse=True)
 
-    def test_vertical_leaderboard(self, admin_client, zone_setup):
-        resp = admin_client.get(reverse("leaderboard"), {"scope": "verticals"})
+    def test_zone_leaderboard(self, admin_client, hub_setup):
+        resp = admin_client.get(reverse("leaderboard"), {"scope": "zones"})
         assert resp.status_code == status.HTTP_200_OK

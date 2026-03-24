@@ -6,7 +6,7 @@ import pytest
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
-from tests.factories import UserFactory, VerticalFactory, ZoneFactory
+from tests.factories import UserFactory, ZoneFactory, HubFactory
 
 
 @pytest.fixture

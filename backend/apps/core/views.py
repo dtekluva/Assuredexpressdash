@@ -6,6 +6,9 @@ via authenticated service-to-service API calls (see axpress_client.py).
 Results are cached per data type (see cache.py).
 
 Only the Communications app uses a local database — everything else is proxied.
+
+NAMING: Views use new business terminology (Zone = old Vertical, Hub = old Zone).
+The axpress_client translates to AXpress API's old naming internally.
 """
 import logging
 from decimal import Decimal
@@ -22,8 +25,8 @@ from .permissions import IsSuperAdmin
 
 logger = logging.getLogger(__name__)
 
-# Colour palette for verticals (cycled if more than 5)
-_VERTICAL_COLORS = ["#10B981", "#3B82F6", "#F59E0B", "#EF4444", "#8B5CF6"]
+# Colour palette for zones (cycled if more than 5)
+_ZONE_COLORS = ["#10B981", "#3B82F6", "#F59E0B", "#EF4444", "#8B5CF6"]
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -60,28 +63,26 @@ class DashboardSummaryView(APIView):
     def get(self, request):
         period = _period(request)
         try:
-            raw = _cached_get_verticals(period)
+            raw = _cached_get_zones(period)
         except AXpressAPIError as exc:
             return _error_response(exc)
 
         # If upstream already returns a wrapped object, pass through
-        if isinstance(raw, dict) and "verticals" in raw:
+        if isinstance(raw, dict) and "zones" in raw:
             return Response(raw)
 
-        # Otherwise transform the raw verticals array into the shape
-        # the frontend expects: { verticals: [...], total_orders, ... }
+        # Otherwise transform the raw array into the shape the frontend expects
         raw_list = raw if isinstance(raw, list) else []
 
-        verticals = []
+        zones = []
         for i, v in enumerate(raw_list):
             pct = float(v.get("target_attainment_pct", 0) or 0)
             orders = int(v.get("orders_count", 0) or 0)
             revenue = float(v.get("revenue", 0) or 0)
             merchant_count = int(v.get("merchant_count", 0) or 0)
-            # Back-calculate target from attainment percentage
             target_orders = round(orders / (pct / 100)) if pct > 0 else 0
 
-            verticals.append({
+            zones.append({
                 "id": v.get("id"),
                 "full_name": v.get("name", ""),
                 "code": v.get("code", ""),
@@ -92,18 +93,17 @@ class DashboardSummaryView(APIView):
                 "total_revenue": revenue,
                 "pct": pct,
                 "target_orders": target_orders,
-                "color": _VERTICAL_COLORS[i % len(_VERTICAL_COLORS)],
-                "zone_count": int(v.get("zone_count", 0) or 0),
+                "color": _ZONE_COLORS[i % len(_ZONE_COLORS)],
+                "hub_count": int(v.get("zone_count", 0) or 0),
                 "rider_count": int(v.get("rider_count", 0) or 0),
                 "merchant_count": merchant_count,
             })
 
-        total_orders = sum(v["total_orders"] for v in verticals)
-        total_revenue = sum(v["total_revenue"] for v in verticals)
-        total_merchants = sum(v["merchant_count"] for v in verticals)
-        # Count merchants in verticals that have at least one order
+        total_orders = sum(z["total_orders"] for z in zones)
+        total_revenue = sum(z["total_revenue"] for z in zones)
+        total_merchants = sum(z["merchant_count"] for z in zones)
         active_merchants = sum(
-            v["merchant_count"] for v in verticals if v["total_orders"] > 0
+            z["merchant_count"] for z in zones if z["total_orders"] > 0
         )
         activation_rate = (
             round(active_merchants / total_merchants * 100)
@@ -112,7 +112,7 @@ class DashboardSummaryView(APIView):
         )
 
         return Response({
-            "verticals": verticals,
+            "zones": zones,
             "total_orders": total_orders,
             "total_revenue": total_revenue,
             "total_merchants": total_merchants,
@@ -122,35 +122,35 @@ class DashboardSummaryView(APIView):
         })
 
 
-@cached_axpress_call("verticals")
-def _cached_get_verticals(period):
-    return axpress_client.get_verticals(period)
+@cached_axpress_call("zones")
+def _cached_get_zones(period):
+    return axpress_client.get_zones(period)
 
 
-# ── Verticals ────────────────────────────────────────────────────────────────
+# ── Zones (was Verticals) ───────────────────────────────────────────────────
 
-class VerticalListView(APIView):
+class ZoneListView(APIView):
     """
-    GET /api/v1/core/verticals/?period=this_month
+    GET /api/v1/core/zones/?period=this_month
 
-    Returns all verticals with aggregated KPIs from the main backend.
+    Returns all zones with aggregated KPIs from the main backend.
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         period = _period(request)
         try:
-            data = _cached_get_verticals(period)
+            data = _cached_get_zones(period)
         except AXpressAPIError as exc:
             return _error_response(exc)
         return Response(data)
 
 
-class VerticalDetailView(APIView):
+class ZoneDetailView(APIView):
     """
-    GET /api/v1/core/verticals/<id>/?period=this_month
+    GET /api/v1/core/zones/<id>/?period=this_month
 
-    Returns a single vertical with its zone breakdown, transformed
+    Returns a single zone with its hub breakdown, transformed
     into the shape the frontend expects.
     """
     permission_classes = [IsAuthenticated]
@@ -158,68 +158,67 @@ class VerticalDetailView(APIView):
     def get(self, request, pk):
         period = _period(request)
         try:
-            raw = _cached_get_vertical_detail(pk, period)
+            raw = _cached_get_zone_detail(pk, period)
         except AXpressAPIError as exc:
             return _error_response(exc)
 
-        # If already transformed (has a nested 'vertical' key), pass through
-        if isinstance(raw, dict) and "vertical" in raw:
+        # If already transformed (has a nested 'zone' key), pass through
+        if isinstance(raw, dict) and "zone" in raw:
             return Response(raw)
 
         # Transform raw upstream response into the frontend-expected shape
         aggregates = raw.get("aggregates", {})
-        raw_zones = raw.get("zones", [])
+        raw_hubs = raw.get("zones", [])
 
-        # Determine vertical colour from code position
+        # Determine zone colour from code position
         code = raw.get("code", "")
         code_idx = ord(code.upper()) - ord("A") if code else 0
-        color_hex = _VERTICAL_COLORS[code_idx % len(_VERTICAL_COLORS)]
+        color_hex = _ZONE_COLORS[code_idx % len(_ZONE_COLORS)]
 
-        # Build zone list — rename merchants_list → merchants (array)
-        zones = []
-        for z in raw_zones:
-            riders = z.get("riders", [])
-            # Zone revenue isn't in the upstream response; sum from riders
-            zone_revenue = float(z.get("revenue", 0) or 0) or sum(
+        # Build hub list
+        hubs = []
+        for h in raw_hubs:
+            riders = h.get("riders", [])
+            hub_revenue = float(h.get("revenue", 0) or 0) or sum(
                 float(r.get("revenue", 0) or 0) for r in riders
             )
-            zones.append({
-                "id": z.get("id"),
-                "name": z.get("name", ""),
-                "captain": z.get("captain", ""),
-                "perf_pct": float(z.get("perf_pct", 0) or 0),
-                "orders": int(z.get("orders", 0) or 0),
-                "target": int(z.get("target", 0) or 0),
+            hubs.append({
+                "id": h.get("id"),
+                "name": h.get("name", ""),
+                "captain": h.get("captain", ""),
+                "perf_pct": float(h.get("perf_pct", 0) or 0),
+                "orders": int(h.get("orders", 0) or 0),
+                "target": int(h.get("target", 0) or 0),
                 "target_orders": sum(int(r.get("target_orders", 0) or 0) for r in riders),
-                "revenue": zone_revenue,
-                "captain_pay": float(z.get("captain_pay", 0) or 0),
+                "revenue": hub_revenue,
+                "captain_pay": float(h.get("captain_pay", 0) or 0),
                 "riders": riders,
-                "merchants": z.get("merchants_list", []),
-                "merchant_summary": z.get("merchants", {}),
+                "merchants": h.get("merchants_list", []),
+                "merchant_summary": h.get("merchants", {}),
             })
 
         total_orders = int(aggregates.get("orders", 0) or 0)
         total_revenue = float(aggregates.get("revenue", 0) or 0)
 
-        # Zone targets are REVENUE targets (₦), not order counts
-        target_revenue = sum(z["target"] for z in zones)
+        # Hub targets are REVENUE targets (₦), not order counts
+        target_revenue = sum(h["target"] for h in hubs)
         pct = round(total_revenue / target_revenue * 100, 1) if target_revenue else 0
 
         # Order-count targets come from individual riders
-        all_riders = [r for z in zones for r in z.get("riders", [])]
+        all_riders = [r for h in hubs for r in h.get("riders", [])]
         target_orders = sum(int(r.get("target_orders", 0) or 0) for r in all_riders)
 
-        lead_pay = sum(z["captain_pay"] for z in zones)
+        lead_pay = sum(h["captain_pay"] for h in hubs)
 
         return Response({
-            "vertical": {
+            "zone": {
                 "id": raw.get("id"),
                 "full_name": raw.get("name", ""),
                 "code": code,
                 "lead_name": raw.get("lead_name", ""),
                 "color_hex": color_hex,
             },
-            "zones": zones,
+            "hubs": hubs,
             "total_orders": total_orders,
             "target_orders": target_orders,
             "total_revenue": total_revenue,
@@ -229,77 +228,122 @@ class VerticalDetailView(APIView):
         })
 
 
-@cached_axpress_call("vertical_detail")
-def _cached_get_vertical_detail(vertical_id, period):
-    return axpress_client.get_vertical_detail(vertical_id, period)
+@cached_axpress_call("zone_detail")
+def _cached_get_zone_detail(zone_id, period):
+    return axpress_client.get_zone_detail(zone_id, period)
 
 
-# ── Zones ────────────────────────────────────────────────────────────────────
+# ── Hubs (was Zones) ────────────────────────────────────────────────────────
 
-class ZoneDashboardView(APIView):
+class HubDashboardView(APIView):
     """
-    GET /api/v1/core/zones/<id>/dashboard/?period=this_month
+    GET /api/v1/core/hubs/<id>/dashboard/?period=this_month
 
-    Zone-level KPIs: orders, revenue, rider/merchant counts, targets.
-    """
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, pk):
-        period = _period(request)
-        try:
-            data = _cached_get_zone_dashboard(pk, period)
-        except AXpressAPIError as exc:
-            return _error_response(exc)
-        return Response(data)
-
-
-@cached_axpress_call("zone_dashboard")
-def _cached_get_zone_dashboard(zone_id, period):
-    return axpress_client.get_zone_dashboard(zone_id, period)
-
-
-class ZoneRidersView(APIView):
-    """
-    GET /api/v1/core/zones/<id>/riders/?period=this_month
-
-    All riders in a zone with their performance metrics.
+    Hub-level KPIs: orders, revenue, rider/merchant counts, targets.
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
         period = _period(request)
         try:
-            data = _cached_get_zone_riders(pk, period)
+            data = _cached_get_hub_dashboard(pk, period)
         except AXpressAPIError as exc:
             return _error_response(exc)
         return Response(data)
 
 
-@cached_axpress_call("zone_riders")
-def _cached_get_zone_riders(zone_id, period):
-    return axpress_client.get_zone_riders(zone_id, period)
+@cached_axpress_call("hub_dashboard")
+def _cached_get_hub_dashboard(hub_id, period):
+    return axpress_client.get_hub_dashboard(hub_id, period)
 
 
-class ZoneMerchantsView(APIView):
+class HubRidersView(APIView):
     """
-    GET /api/v1/core/zones/<id>/merchants/?period=this_month
+    GET /api/v1/core/hubs/<id>/riders/?period=this_month
 
-    All merchants in a zone with activity status and order metrics.
+    All riders in a hub with their performance metrics.
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
         period = _period(request)
         try:
-            data = _cached_get_zone_merchants(pk, period)
+            data = _cached_get_hub_riders(pk, period)
         except AXpressAPIError as exc:
             return _error_response(exc)
         return Response(data)
 
 
-@cached_axpress_call("zone_merchants")
-def _cached_get_zone_merchants(zone_id, period):
-    return axpress_client.get_zone_merchants(zone_id, period)
+@cached_axpress_call("hub_riders")
+def _cached_get_hub_riders(hub_id, period):
+    return axpress_client.get_hub_riders(hub_id, period)
+
+
+class HubMerchantsView(APIView):
+    """
+    GET /api/v1/core/hubs/<id>/merchants/?period=this_month
+
+    All merchants in a hub with activity status and order metrics.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        period = _period(request)
+        try:
+            data = _cached_get_hub_merchants(pk, period)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data)
+
+
+@cached_axpress_call("hub_merchants")
+def _cached_get_hub_merchants(hub_id, period):
+    return axpress_client.get_hub_merchants(hub_id, period)
+
+
+# ── Relay Nodes ──────────────────────────────────────────────────────────────
+
+class RelayNodeListView(APIView):
+    """
+    GET /api/v1/core/relay-nodes/?hub=...
+
+    List relay nodes, optionally filtered by hub.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        params = dict(request.query_params)
+        # Translate 'hub' param to 'zone' for AXpress API
+        if "hub" in params:
+            params["zone"] = params.pop("hub")
+        try:
+            data = _cached_get_relay_nodes(str(params))
+            if data is None:
+                data = axpress_client.list_relay_nodes(params)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data)
+
+
+class RelayNodeDetailView(APIView):
+    """
+    GET /api/v1/core/relay-nodes/<id>/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            data = axpress_client.get_relay_node(pk)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data)
+
+
+@cached_axpress_call("relay_nodes")
+def _cached_get_relay_nodes(params_key):
+    # This is a pass-through; the actual call happens in the view
+    # We cache based on the stringified params
+    return None
 
 
 # ── Rider Performance ────────────────────────────────────────────────────────
@@ -377,24 +421,29 @@ def _cached_get_merchant_analytics(merchant_id, period):
 
 class LeaderboardView(APIView):
     """
-    GET /api/v1/core/leaderboard/?period=this_month&scope=zones
+    GET /api/v1/core/leaderboard/?period=this_month&scope=hubs
 
-    Zone and vertical leaderboards with earnings drill-down.
-    scope: "zones" (default) or "verticals"
+    Hub and zone leaderboards with earnings drill-down.
+    scope: "hubs" (default) or "zones"
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         period = _period(request)
-        scope = request.query_params.get("scope", "zones")
+        scope = request.query_params.get("scope", "hubs")
         try:
-            if scope == "verticals":
-                data = _cached_get_vertical_leaderboard(period)
-            else:
+            if scope == "zones":
                 data = _cached_get_zone_leaderboard(period)
+            else:
+                data = _cached_get_hub_leaderboard(period)
         except AXpressAPIError as exc:
             return _error_response(exc)
         return Response(data)
+
+
+@cached_axpress_call("leaderboard")
+def _cached_get_hub_leaderboard(period):
+    return axpress_client.get_hub_leaderboard(period)
 
 
 @cached_axpress_call("leaderboard")
@@ -402,116 +451,48 @@ def _cached_get_zone_leaderboard(period):
     return axpress_client.get_zone_leaderboard(period)
 
 
-@cached_axpress_call("leaderboard")
-def _cached_get_vertical_leaderboard(period):
-    return axpress_client.get_vertical_leaderboard(period)
-
-
 # ── Order Analytics ──────────────────────────────────────────────────────────
 
 class OrderAnalyticsView(APIView):
     """
-    GET /api/v1/core/orders/analytics/?period=this_month&zone=...&vertical=...
+    GET /api/v1/core/orders/analytics/?period=this_month&hub=...&zone=...
 
-    Aggregated order metrics: totals, revenue, by-zone breakdown, by-hour.
+    Aggregated order metrics: totals, revenue, by-hub breakdown, by-hour.
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         period = _period(request)
+        hub = request.query_params.get("hub")
         zone = request.query_params.get("zone")
-        vertical = request.query_params.get("vertical")
         try:
-            data = _cached_get_order_analytics(period, zone, vertical)
+            data = _cached_get_order_analytics(period, hub, zone)
         except AXpressAPIError as exc:
             return _error_response(exc)
         return Response(data)
 
 
 @cached_axpress_call("order_analytics")
-def _cached_get_order_analytics(period, zone=None, vertical=None):
-    return axpress_client.get_order_analytics(period, zone=zone, vertical=vertical)
+def _cached_get_order_analytics(period, hub=None, zone=None):
+    return axpress_client.get_order_analytics(period, hub=hub, zone=zone)
 
 
 # ═════════════════════════════════════════════════════════════════════════════
 # CRUD Proxy Views — dispatch endpoints on the main backend
-# These restore the original endpoints the frontend expects for listing,
-# creating, and updating riders, merchants, orders, and zones.
 # ═════════════════════════════════════════════════════════════════════════════
 
 
-# ── Verticals CRUD ──────────────────────────────────────────────────────────
-
-class VerticalCRUDListView(APIView):
-    """GET /api/v1/core/admin/verticals/ — list all verticals (dispatch)
-       POST /api/v1/core/admin/verticals/ — create a new vertical
-    """
-    permission_classes = [IsAuthenticated, IsSuperAdmin]
-
-    def get(self, request):
-        try:
-            data = axpress_client.list_verticals_crud(dict(request.query_params))
-        except AXpressAPIError as exc:
-            return _error_response(exc)
-        return Response(data)
-
-    def post(self, request):
-        try:
-            data = axpress_client.create_vertical(request.data)
-        except AXpressAPIError as exc:
-            return _error_response(exc)
-        return Response(data, status=status.HTTP_201_CREATED)
-
-
-class VerticalCRUDDetailView(APIView):
-    """GET/PATCH/DELETE /api/v1/core/admin/verticals/<id>/"""
-    permission_classes = [IsAuthenticated, IsSuperAdmin]
-
-    def get(self, request, pk):
-        try:
-            data = axpress_client.get_vertical(pk)
-        except AXpressAPIError as exc:
-            return _error_response(exc)
-        return Response(data)
-
-    def patch(self, request, pk):
-        try:
-            data = axpress_client.update_vertical(pk, request.data)
-        except AXpressAPIError as exc:
-            return _error_response(exc)
-        return Response(data)
-
-    def delete(self, request, pk):
-        try:
-            axpress_client.delete_vertical(pk)
-        except AXpressAPIError as exc:
-            return _error_response(exc)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-# ── Zones CRUD ──────────────────────────────────────────────────────────────
-
-class ZoneListView(APIView):
-    """GET /api/v1/core/zones/?vertical=..."""
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        try:
-            data = axpress_client.list_zones(dict(request.query_params))
-        except AXpressAPIError as exc:
-            return _error_response(exc)
-        return Response(data)
-
+# ── Zones CRUD (AXpress: Verticals) ─────────────────────────────────────────
 
 class ZoneCRUDListView(APIView):
-    """GET /api/v1/core/admin/zones/ — list all zones
+    """GET /api/v1/core/admin/zones/ — list all zones (dispatch)
        POST /api/v1/core/admin/zones/ — create a new zone
     """
     permission_classes = [IsAuthenticated, IsSuperAdmin]
 
     def get(self, request):
         try:
-            data = axpress_client.list_zones(dict(request.query_params))
+            data = axpress_client.list_zones_crud(dict(request.query_params))
         except AXpressAPIError as exc:
             return _error_response(exc)
         return Response(data)
@@ -550,50 +531,111 @@ class ZoneCRUDDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# ── Zone Targets CRUD ───────────────────────────────────────────────────────
+# ── Hubs CRUD (AXpress: Zones) ──────────────────────────────────────────────
 
-class ZoneTargetListView(APIView):
-    """GET /api/v1/core/admin/zone-targets/?zone=...&month=...
-       POST /api/v1/core/admin/zone-targets/
+class HubListView(APIView):
+    """GET /api/v1/core/hubs/?zone=..."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            data = axpress_client.list_hubs(dict(request.query_params))
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data)
+
+
+class HubCRUDListView(APIView):
+    """GET /api/v1/core/admin/hubs/ — list all hubs
+       POST /api/v1/core/admin/hubs/ — create a new hub
     """
     permission_classes = [IsAuthenticated, IsSuperAdmin]
 
     def get(self, request):
         try:
-            data = axpress_client.list_zone_targets(dict(request.query_params))
+            data = axpress_client.list_hubs(dict(request.query_params))
         except AXpressAPIError as exc:
             return _error_response(exc)
         return Response(data)
 
     def post(self, request):
         try:
-            data = axpress_client.create_zone_target(request.data)
+            data = axpress_client.create_hub(request.data)
         except AXpressAPIError as exc:
             return _error_response(exc)
         return Response(data, status=status.HTTP_201_CREATED)
 
 
-class ZoneTargetDetailView(APIView):
-    """GET/PATCH/DELETE /api/v1/core/admin/zone-targets/<id>/"""
+class HubCRUDDetailView(APIView):
+    """GET/PATCH/DELETE /api/v1/core/admin/hubs/<id>/"""
     permission_classes = [IsAuthenticated, IsSuperAdmin]
 
     def get(self, request, pk):
         try:
-            data = axpress_client.get_zone_target(pk)
+            data = axpress_client.get_hub(pk)
         except AXpressAPIError as exc:
             return _error_response(exc)
         return Response(data)
 
     def patch(self, request, pk):
         try:
-            data = axpress_client.update_zone_target(pk, request.data)
+            data = axpress_client.update_hub(pk, request.data)
         except AXpressAPIError as exc:
             return _error_response(exc)
         return Response(data)
 
     def delete(self, request, pk):
         try:
-            axpress_client.delete_zone_target(pk)
+            axpress_client.delete_hub(pk)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ── Hub Targets CRUD (AXpress: Zone Targets) ────────────────────────────────
+
+class HubTargetListView(APIView):
+    """GET /api/v1/core/admin/hub-targets/?hub=...&month=...
+       POST /api/v1/core/admin/hub-targets/
+    """
+    permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def get(self, request):
+        try:
+            data = axpress_client.list_hub_targets(dict(request.query_params))
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data)
+
+    def post(self, request):
+        try:
+            data = axpress_client.create_hub_target(request.data)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data, status=status.HTTP_201_CREATED)
+
+
+class HubTargetDetailView(APIView):
+    """GET/PATCH/DELETE /api/v1/core/admin/hub-targets/<id>/"""
+    permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def get(self, request, pk):
+        try:
+            data = axpress_client.get_hub_target(pk)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data)
+
+    def patch(self, request, pk):
+        try:
+            data = axpress_client.update_hub_target(pk, request.data)
+        except AXpressAPIError as exc:
+            return _error_response(exc)
+        return Response(data)
+
+    def delete(self, request, pk):
+        try:
+            axpress_client.delete_hub_target(pk)
         except AXpressAPIError as exc:
             return _error_response(exc)
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -602,7 +644,7 @@ class ZoneTargetDetailView(APIView):
 # ── Riders CRUD ──────────────────────────────────────────────────────────────
 
 class RiderListView(APIView):
-    """GET /api/v1/core/riders/?zone=...&status=..."""
+    """GET /api/v1/core/riders/?hub=...&status=..."""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -643,23 +685,23 @@ class RiderReassignView(APIView):
     """
     POST /api/v1/core/admin/riders/reassign/
 
-    Move a single rider to a different zone.
-    Body: { "rider_id": "<uuid>", "new_zone_id": "<uuid>" }
+    Move a single rider to a different hub.
+    Body: { "rider_id": "<uuid>", "new_hub_id": "<uuid>" }
     """
     permission_classes = [IsAuthenticated, IsSuperAdmin]
 
     def post(self, request):
         rider_id = request.data.get("rider_id")
-        new_zone_id = request.data.get("new_zone_id")
+        new_hub_id = request.data.get("new_hub_id")
 
-        if not rider_id or not new_zone_id:
+        if not rider_id or not new_hub_id:
             return Response(
-                {"error": "rider_id and new_zone_id are required"},
+                {"error": "rider_id and new_hub_id are required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
-            data = axpress_client.reassign_rider(rider_id, new_zone_id)
+            data = axpress_client.reassign_rider(rider_id, new_hub_id)
         except AXpressAPIError as exc:
             return _error_response(exc)
         return Response(data)
@@ -669,30 +711,30 @@ class RiderBulkReassignView(APIView):
     """
     POST /api/v1/core/admin/riders/bulk-reassign/
 
-    Move multiple riders to a different zone in one request.
-    Body: { "rider_ids": ["<uuid>", ...], "new_zone_id": "<uuid>" }
+    Move multiple riders to a different hub in one request.
+    Body: { "rider_ids": ["<uuid>", ...], "new_hub_id": "<uuid>" }
     """
     permission_classes = [IsAuthenticated, IsSuperAdmin]
 
     def post(self, request):
         rider_ids = request.data.get("rider_ids", [])
-        new_zone_id = request.data.get("new_zone_id")
+        new_hub_id = request.data.get("new_hub_id")
 
         if not rider_ids or not isinstance(rider_ids, list):
             return Response(
                 {"error": "rider_ids must be a non-empty list"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if not new_zone_id:
+        if not new_hub_id:
             return Response(
-                {"error": "new_zone_id is required"},
+                {"error": "new_hub_id is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         results = {"succeeded": [], "failed": []}
         for rider_id in rider_ids:
             try:
-                axpress_client.reassign_rider(rider_id, new_zone_id)
+                axpress_client.reassign_rider(rider_id, new_hub_id)
                 results["succeeded"].append(rider_id)
             except AXpressAPIError as exc:
                 results["failed"].append({

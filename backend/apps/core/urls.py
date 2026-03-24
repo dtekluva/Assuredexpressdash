@@ -3,23 +3,27 @@ OCC core URL routes.
 
 All endpoints proxy data from the main AXpress backend.
 The comms app has its own urls.py for local communication features.
+
+NAMING: URLs use new business terminology (zones = old verticals, hubs = old zones).
 """
 from django.urls import path
 
 from .views import (
     DashboardSummaryView,
-    VerticalListView,
-    VerticalDetailView,
-    VerticalCRUDListView,
-    VerticalCRUDDetailView,
-    ZoneDashboardView,
     ZoneListView,
+    ZoneDetailView,
     ZoneCRUDListView,
     ZoneCRUDDetailView,
-    ZoneRidersView,
-    ZoneMerchantsView,
-    ZoneTargetListView,
-    ZoneTargetDetailView,
+    HubDashboardView,
+    HubListView,
+    HubCRUDListView,
+    HubCRUDDetailView,
+    HubRidersView,
+    HubMerchantsView,
+    HubTargetListView,
+    HubTargetDetailView,
+    RelayNodeListView,
+    RelayNodeDetailView,
     RiderPerformanceView,
     RiderLocationsView,
     RiderListView,
@@ -41,17 +45,21 @@ urlpatterns = [
     # Dashboard
     path("dashboard/", DashboardSummaryView.as_view(), name="dashboard-summary"),
 
-    # Verticals
-    path("verticals/", VerticalListView.as_view(), name="vertical-list"),
-    path("verticals/<str:pk>/", VerticalDetailView.as_view(), name="vertical-detail"),
-    path("verticals/<str:pk>/performance/", VerticalDetailView.as_view(), name="vertical-performance"),  # alias
-
-    # Zones — CRUD + analytics
+    # Zones (was Verticals)
     path("zones/", ZoneListView.as_view(), name="zone-list"),
-    path("zones/<str:pk>/dashboard/", ZoneDashboardView.as_view(), name="zone-dashboard"),
-    path("zones/<str:pk>/performance/", ZoneDashboardView.as_view(), name="zone-performance"),  # alias
-    path("zones/<str:pk>/riders/", ZoneRidersView.as_view(), name="zone-riders"),
-    path("zones/<str:pk>/merchants/", ZoneMerchantsView.as_view(), name="zone-merchants"),
+    path("zones/<str:pk>/", ZoneDetailView.as_view(), name="zone-detail"),
+    path("zones/<str:pk>/performance/", ZoneDetailView.as_view(), name="zone-performance"),  # alias
+
+    # Hubs (was Zones) — analytics
+    path("hubs/", HubListView.as_view(), name="hub-list"),
+    path("hubs/<str:pk>/dashboard/", HubDashboardView.as_view(), name="hub-dashboard"),
+    path("hubs/<str:pk>/performance/", HubDashboardView.as_view(), name="hub-performance"),  # alias
+    path("hubs/<str:pk>/riders/", HubRidersView.as_view(), name="hub-riders"),
+    path("hubs/<str:pk>/merchants/", HubMerchantsView.as_view(), name="hub-merchants"),
+
+    # Relay Nodes (physical handoff points)
+    path("relay-nodes/", RelayNodeListView.as_view(), name="relay-node-list"),
+    path("relay-nodes/<str:pk>/", RelayNodeDetailView.as_view(), name="relay-node-detail"),
 
     # Riders — CRUD + analytics
     path("riders/", RiderListView.as_view(), name="rider-list"),
@@ -75,13 +83,13 @@ urlpatterns = [
     path("orders/<str:pk>/", OrderDetailView.as_view(), name="order-detail"),
     path("orders/<str:pk>/assign/", OrderAssignView.as_view(), name="order-assign"),
 
-    # Admin — Super admin CRUD for verticals, zones, and targets
-    path("admin/verticals/", VerticalCRUDListView.as_view(), name="admin-vertical-list"),
-    path("admin/verticals/<str:pk>/", VerticalCRUDDetailView.as_view(), name="admin-vertical-detail"),
+    # Admin — Super admin CRUD for zones, hubs, and targets
     path("admin/zones/", ZoneCRUDListView.as_view(), name="admin-zone-list"),
     path("admin/zones/<str:pk>/", ZoneCRUDDetailView.as_view(), name="admin-zone-detail"),
-    path("admin/zone-targets/", ZoneTargetListView.as_view(), name="admin-zone-target-list"),
-    path("admin/zone-targets/<str:pk>/", ZoneTargetDetailView.as_view(), name="admin-zone-target-detail"),
+    path("admin/hubs/", HubCRUDListView.as_view(), name="admin-hub-list"),
+    path("admin/hubs/<str:pk>/", HubCRUDDetailView.as_view(), name="admin-hub-detail"),
+    path("admin/hub-targets/", HubTargetListView.as_view(), name="admin-hub-target-list"),
+    path("admin/hub-targets/<str:pk>/", HubTargetDetailView.as_view(), name="admin-hub-target-detail"),
 
     # Admin — Rider reassignment
     path("admin/riders/reassign/", RiderReassignView.as_view(), name="admin-rider-reassign"),

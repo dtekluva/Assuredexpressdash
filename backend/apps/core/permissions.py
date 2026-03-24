@@ -7,24 +7,24 @@ class IsSuperAdmin(BasePermission):
         return request.user.is_authenticated and request.user.role == "super_admin"
 
 
-class IsAdminOrVerticalLead(BasePermission):
-    """Super admins and vertical leads can see all vertical data."""
+class IsAdminOrZoneLead(BasePermission):
+    """Super admins and zone leads can see all zone data."""
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.role in (
-            "super_admin", "vertical_lead", "ops_analyst"
+            "super_admin", "zone_lead", "ops_analyst"
         )
 
 
-class CanViewZone(BasePermission):
-    """Zone captains can only see their own zone."""
+class CanViewHub(BasePermission):
+    """Hub captains can only see their own hub."""
     def has_object_permission(self, request, view, obj):
         user = request.user
         if user.role in ("super_admin", "ops_analyst"):
             return True
-        if user.role == "vertical_lead":
-            return obj.vertical_id == user.vertical_id
-        if user.role == "zone_captain":
-            return obj.id == user.zone_id
+        if user.role == "zone_lead":
+            return obj.zone_id == user.zone_id
+        if user.role == "hub_captain":
+            return obj.id == user.hub_id
         return False
 
 

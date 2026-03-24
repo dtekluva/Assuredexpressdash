@@ -25,7 +25,7 @@ class MessageTemplate(models.Model):
     msg_type    = models.CharField(max_length=30, choices=MsgType.choices)
     label       = models.CharField(max_length=100)
     subject     = models.CharField(max_length=200, blank=True, help_text="Email subject only")
-    body        = models.TextField(help_text="Supports {name}, {orders}, {zone}, {captain} tokens")
+    body        = models.TextField(help_text="Supports {name}, {orders}, {hub}, {captain} tokens")
     is_active   = models.BooleanField(default=True)
     created_by  = models.ForeignKey(
         "authentication.User", on_delete=models.SET_NULL, null=True, blank=True
@@ -71,13 +71,15 @@ class Broadcast(models.Model):
         "authentication.User", on_delete=models.SET_NULL, null=True, related_name="broadcasts"
     )
     # Scope — one of these must be set
-    vertical    = models.ForeignKey(
-        "core.Vertical", on_delete=models.SET_NULL, null=True, blank=True,
-        related_name="broadcasts", help_text="Scope to entire vertical"
-    )
     zone        = models.ForeignKey(
         "core.Zone", on_delete=models.SET_NULL, null=True, blank=True,
-        related_name="broadcasts", help_text="Scope to single zone"
+        related_name="broadcasts", help_text="Scope to entire zone",
+        db_column="vertical_id",
+    )
+    hub         = models.ForeignKey(
+        "core.Hub", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="broadcasts", help_text="Scope to single hub",
+        db_column="zone_id",
     )
     audience    = models.CharField(max_length=20, choices=Audience.choices)
     recipient_filter = models.CharField(
@@ -106,7 +108,7 @@ class Broadcast(models.Model):
         db_table = "comms_broadcasts"
 
     def __str__(self):
-        scope = self.zone or self.vertical
+        scope = self.hub or self.zone
         return f"Broadcast to {self.audience} · {scope} · {self.created_at:%Y-%m-%d}"
 
     @property

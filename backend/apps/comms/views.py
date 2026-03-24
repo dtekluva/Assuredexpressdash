@@ -28,15 +28,15 @@ class MessageTemplateViewSet(viewsets.ModelViewSet):
 class BroadcastViewSet(viewsets.ModelViewSet):
     """Create and manage broadcast sends."""
     permission_classes = [IsAuthenticated]
-    filterset_fields = ["audience", "status", "zone", "vertical"]
+    filterset_fields = ["audience", "status", "hub", "zone"]
 
     def get_queryset(self):
         user = self.request.user
-        qs = Broadcast.objects.select_related("created_by", "zone", "vertical")
-        if user.role == "zone_captain" and user.zone_id:
+        qs = Broadcast.objects.select_related("created_by", "hub", "zone")
+        if user.role == "hub_captain" and user.hub_id:
+            return qs.filter(hub_id=user.hub_id)
+        if user.role == "zone_lead" and user.zone_id:
             return qs.filter(zone_id=user.zone_id)
-        if user.role == "vertical_lead" and user.vertical_id:
-            return qs.filter(vertical_id=user.vertical_id)
         return qs
 
     def get_serializer_class(self):
