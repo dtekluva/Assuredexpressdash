@@ -86,6 +86,8 @@ All endpoints are under `/api/v1/core/`. The old paths no longer exist.
 | `{ "rider_id": "...", "new_zone_id": "..." }` | `{ "rider_id": "...", "new_hub_id": "..." }` |
 | `{ "rider_ids": [...], "new_zone_id": "..." }` | `{ "rider_ids": [...], "new_hub_id": "..." }` |
 
+**Important:** `new_hub_id` must be a **Relay Node UUID** (not a zone or hub UUID). Riders are now assigned to relay nodes. To get relay nodes for a hub, call `GET /core/relay-nodes/?hub=<hub_uuid>`.
+
 ### Auth — Signup
 
 | Old Endpoint | New Endpoint |

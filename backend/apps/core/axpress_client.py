@@ -344,9 +344,9 @@ def update_rider(rider_id, data: dict):
     return _patch(f"/api/dispatch/riders/{rider_id}/", data)
 
 
-def reassign_rider(rider_id, new_hub_id):
-    """Update a rider's hub assignment. AXpress uses 'zone' as the field name."""
-    return _patch(f"/api/dispatch/riders/{rider_id}/", {"zone": new_hub_id})
+def reassign_rider(rider_id, new_relay_node_id):
+    """Update a rider's assignment. AXpress now uses 'hub' which points to a RelayNode UUID."""
+    return _patch(f"/api/dispatch/riders/{rider_id}/", {"hub": new_relay_node_id})
 
 
 def get_rider_orders(rider_id, params: dict | None = None):
