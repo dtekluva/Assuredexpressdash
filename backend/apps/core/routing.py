@@ -2,6 +2,6 @@ from django.urls import re_path
 from . import consumers
 
 websocket_urlpatterns = [
-    re_path(r"ws/dashboard/$",         consumers.DashboardConsumer.as_asgi()),
-    re_path(r"ws/zone/(?P<zone_id>\d+)/$", consumers.ZoneConsumer.as_asgi()),
+    re_path(r"ws/dashboard/$",           consumers.DashboardConsumer.as_asgi()),
+    re_path(r"ws/hub/(?P<hub_id>[^/]+)/$", consumers.HubConsumer.as_asgi()),
 ]

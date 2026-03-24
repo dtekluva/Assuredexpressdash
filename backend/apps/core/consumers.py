@@ -6,7 +6,7 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.utils import timezone
-from .services import aggregate_zone_summary
+from .services import aggregate_hub_summary
 from .serializers import get_date_range
 
 
@@ -42,27 +42,26 @@ class DashboardConsumer(AsyncWebsocketConsumer):
         return {"type": "summary", "period": period, "timestamp": timezone.now().isoformat()}
 
 
-class ZoneConsumer(AsyncWebsocketConsumer):
+class HubConsumer(AsyncWebsocketConsumer):
     """
-    Per-zone live feed. Zone captains connect here to see live order/rider updates.
-    Group: "zone_{zone_id}"
+    Per-hub live feed. Hub captains connect here to see live order/rider updates.
+    Group: "hub_{hub_id}"
     """
     async def connect(self):
-        self.zone_id = self.scope["url_route"]["kwargs"]["zone_id"]
-        self.group_name = f"zone_{self.zone_id}"
+        self.hub_id = self.scope["url_route"]["kwargs"]["hub_id"]
+        self.group_name = f"hub_{self.hub_id}"
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
-        # Send current snapshot on connect
-        summary = await self.get_zone_summary()
+        summary = await self.get_hub_summary()
         await self.send(text_data=json.dumps(summary))
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
-    async def zone_update(self, event):
+    async def hub_update(self, event):
         await self.send(text_data=json.dumps(event["payload"]))
 
     @database_sync_to_async
-    def get_zone_summary(self):
+    def get_hub_summary(self):
         start, end = get_date_range("today")
-        return aggregate_zone_summary(self.zone_id, start, end)
+        return aggregate_hub_summary(self.hub_id, start, end)
