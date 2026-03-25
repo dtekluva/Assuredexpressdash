@@ -176,31 +176,26 @@ def _period_params(period: str, **extra) -> dict:
     return params
 
 
-# ── Zones (AXpress: Verticals) & Hubs (AXpress: Zones) ──────────────────────
+# ── Zones & Hubs (AXpress: Zones) ────────────────────────────────────────────
 
 def get_zones(period: str = "this_month"):
-    """GET /api/occ/verticals/?period=... — list all zones (AXpress verticals)."""
-    return _get("/api/occ/verticals/", _period_params(period))
+    """GET /api/occ/leaderboard/zones/?period=... — all zones with aggregated KPIs."""
+    return _get("/api/occ/leaderboard/zones/", _period_params(period))
 
 
 def get_zone_detail(zone_id, period: str = "this_month"):
-    """GET /api/occ/verticals/<id>/?period=... — zone detail (AXpress vertical)."""
-    return _get(f"/api/occ/verticals/{zone_id}/", _period_params(period))
+    """GET /api/occ/zones/<id>/dashboard/?period=... — zone-level KPIs."""
+    return _get(f"/api/occ/zones/{zone_id}/dashboard/", _period_params(period))
 
 
-def get_hub_dashboard(hub_id, period: str = "this_month"):
-    """GET /api/occ/zones/<id>/dashboard/?period=... — hub dashboard (AXpress zone)."""
-    return _get(f"/api/occ/zones/{hub_id}/dashboard/", _period_params(period))
+def get_zone_riders(zone_id, period: str = "this_month"):
+    """GET /api/occ/zones/<id>/riders/?period=... — riders in a zone."""
+    return _get(f"/api/occ/zones/{zone_id}/riders/", _period_params(period))
 
 
-def get_hub_riders(hub_id, period: str = "this_month"):
-    """GET /api/occ/zones/<id>/riders/?period=... — riders in a hub (AXpress zone)."""
-    return _get(f"/api/occ/zones/{hub_id}/riders/", _period_params(period))
-
-
-def get_hub_merchants(hub_id, period: str = "this_month"):
-    """GET /api/occ/zones/<id>/merchants/?period=... — merchants in a hub (AXpress zone)."""
-    return _get(f"/api/occ/zones/{hub_id}/merchants/", _period_params(period))
+def get_zone_merchants(zone_id, period: str = "this_month"):
+    """GET /api/occ/zones/<id>/merchants/?period=... — merchants in a zone."""
+    return _get(f"/api/occ/zones/{zone_id}/merchants/", _period_params(period))
 
 
 # ── Rider Performance ────────────────────────────────────────────────────────
@@ -225,13 +220,13 @@ def get_merchant_analytics(merchant_id, period: str = "this_month"):
 # ── Leaderboards ─────────────────────────────────────────────────────────────
 
 def get_hub_leaderboard(period: str = "this_month"):
-    """GET /api/occ/leaderboard/zones/?period=... — hub leaderboard (AXpress zone leaderboard)."""
-    return _get("/api/occ/leaderboard/zones/", _period_params(period))
+    """Deprecated alias — same as get_zone_leaderboard. Kept for backward compat."""
+    return get_zone_leaderboard(period)
 
 
 def get_zone_leaderboard(period: str = "this_month"):
-    """GET /api/occ/leaderboard/verticals/?period=... — zone leaderboard (AXpress vertical leaderboard)."""
-    return _get("/api/occ/leaderboard/verticals/", _period_params(period))
+    """GET /api/occ/leaderboard/zones/?period=... — same as get_zones, kept for leaderboard view."""
+    return _get("/api/occ/leaderboard/zones/", _period_params(period))
 
 
 # ── Order Analytics ──────────────────────────────────────────────────────────
@@ -246,25 +241,25 @@ def get_order_analytics(period: str = "this_month", hub=None, zone=None):
 
 # ── Dispatch CRUD (proxied to /api/dispatch/*) ──────────────────────────────
 
-# Zones (AXpress: Verticals)
+# Zones (AXpress: Zones — verticals are deprecated)
 def list_zones_crud(params: dict | None = None):
-    return _get("/api/dispatch/verticals/", params)
+    return _get("/api/dispatch/zones/", params)
 
 
 def get_zone(zone_id):
-    return _get(f"/api/dispatch/verticals/{zone_id}/")
+    return _get(f"/api/dispatch/zones/{zone_id}/")
 
 
 def create_zone(data: dict):
-    return _post("/api/dispatch/verticals/", data)
+    return _post("/api/dispatch/zones/", data)
 
 
 def update_zone(zone_id, data: dict):
-    return _patch(f"/api/dispatch/verticals/{zone_id}/", data)
+    return _patch(f"/api/dispatch/zones/{zone_id}/", data)
 
 
 def delete_zone(zone_id):
-    return _delete(f"/api/dispatch/verticals/{zone_id}/")
+    return _delete(f"/api/dispatch/zones/{zone_id}/")
 
 
 # Hubs (AXpress: Zones)

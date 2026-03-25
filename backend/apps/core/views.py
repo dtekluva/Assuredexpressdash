@@ -55,8 +55,8 @@ class DashboardSummaryView(APIView):
     """
     GET /api/v1/core/dashboard/?period=this_month
 
-    Proxies to the main backend's verticals endpoint and aggregates a
-    top-level summary for the OCC landing page.
+    Fetches from the zone leaderboard endpoint (/api/occ/leaderboard/zones/)
+    and transforms it into the dashboard summary the frontend expects.
     """
     permission_classes = [IsAuthenticated]
 
@@ -71,53 +71,45 @@ class DashboardSummaryView(APIView):
         if isinstance(raw, dict) and "zones" in raw:
             return Response(raw)
 
-        # Otherwise transform the raw array into the shape the frontend expects
+        # Transform the leaderboard array into the dashboard shape
         raw_list = raw if isinstance(raw, list) else []
 
         zones = []
         for i, v in enumerate(raw_list):
-            pct = float(v.get("target_attainment_pct", 0) or 0)
-            orders = int(v.get("orders_count", 0) or 0)
+            orders = int(v.get("orders", 0) or 0)
             revenue = float(v.get("revenue", 0) or 0)
-            merchant_count = int(v.get("merchant_count", 0) or 0)
-            target_orders = round(orders / (pct / 100)) if pct > 0 else 0
+            target = int(v.get("target", 0) or 0)
+            pct = float(v.get("target_pct", 0) or 0)
 
             zones.append({
-                "id": v.get("id"),
-                "full_name": v.get("name", ""),
-                "code": v.get("code", ""),
-                "lead_name": v.get("lead_name", ""),
-                "lead": v.get("lead"),
+                "id": v.get("zone_id"),
+                "full_name": v.get("zone_name", ""),
+                "code": chr(ord("A") + i),
+                "lead_name": v.get("captain", ""),
+                "lead": None,
                 "total_orders": orders,
-                "orders_completed": int(v.get("orders_completed", 0) or 0),
+                "orders_completed": orders,
                 "total_revenue": revenue,
                 "pct": pct,
-                "target_orders": target_orders,
-                "color": _ZONE_COLORS[i % len(_ZONE_COLORS)],
-                "hub_count": int(v.get("zone_count", 0) or 0),
-                "rider_count": int(v.get("rider_count", 0) or 0),
-                "merchant_count": merchant_count,
+                "target_orders": target,
+                "color": v.get("color") or _ZONE_COLORS[i % len(_ZONE_COLORS)],
+                "hub_count": 0,
+                "rider_count": 0,
+                "merchant_count": 0,
+                "earnings": v.get("earnings"),
+                "rank": v.get("rank"),
             })
 
         total_orders = sum(z["total_orders"] for z in zones)
         total_revenue = sum(z["total_revenue"] for z in zones)
-        total_merchants = sum(z["merchant_count"] for z in zones)
-        active_merchants = sum(
-            z["merchant_count"] for z in zones if z["total_orders"] > 0
-        )
-        activation_rate = (
-            round(active_merchants / total_merchants * 100)
-            if total_merchants
-            else 0
-        )
 
         return Response({
             "zones": zones,
             "total_orders": total_orders,
             "total_revenue": total_revenue,
-            "total_merchants": total_merchants,
-            "active_merchants": active_merchants,
-            "activation_rate": activation_rate,
+            "total_merchants": 0,
+            "active_merchants": 0,
+            "activation_rate": 0,
             "open_flags": 0,
         })
 
@@ -150,8 +142,8 @@ class ZoneDetailView(APIView):
     """
     GET /api/v1/core/zones/<id>/?period=this_month
 
-    Returns a single zone with its hub breakdown, transformed
-    into the shape the frontend expects.
+    Returns zone-level KPIs from /api/occ/zones/{id}/dashboard/
+    plus relay nodes from /api/dispatch/relay-nodes/?zone={id}.
     """
     permission_classes = [IsAuthenticated]
 
@@ -166,65 +158,49 @@ class ZoneDetailView(APIView):
         if isinstance(raw, dict) and "zone" in raw:
             return Response(raw)
 
-        # Transform raw upstream response into the frontend-expected shape
-        aggregates = raw.get("aggregates", {})
-        raw_hubs = raw.get("zones", [])
+        # Fetch relay nodes for this zone
+        try:
+            relay_nodes = axpress_client.list_relay_nodes_by_hub(pk)
+        except AXpressAPIError:
+            relay_nodes = []
 
-        # Determine zone colour from code position
-        code = raw.get("code", "")
-        code_idx = ord(code.upper()) - ord("A") if code else 0
-        color_hex = _ZONE_COLORS[code_idx % len(_ZONE_COLORS)]
+        relay_nodes_list = relay_nodes if isinstance(relay_nodes, list) else []
 
-        # Build hub list
-        hubs = []
-        for h in raw_hubs:
-            riders = h.get("riders", [])
-            hub_revenue = float(h.get("revenue", 0) or 0) or sum(
-                float(r.get("revenue", 0) or 0) for r in riders
-            )
-            hubs.append({
-                "id": h.get("id"),
-                "name": h.get("name", ""),
-                "captain": h.get("captain", ""),
-                "perf_pct": float(h.get("perf_pct", 0) or 0),
-                "orders": int(h.get("orders", 0) or 0),
-                "target": int(h.get("target", 0) or 0),
-                "target_orders": sum(int(r.get("target_orders", 0) or 0) for r in riders),
-                "revenue": hub_revenue,
-                "captain_pay": float(h.get("captain_pay", 0) or 0),
-                "riders": riders,
-                "merchants": h.get("merchants_list", []),
-                "merchant_summary": h.get("merchants", {}),
-            })
+        # Extract KPIs from the zone dashboard response
+        total_orders = int(raw.get("orders_total", 0) or raw.get("orders", 0) or 0)
+        orders_completed = int(raw.get("orders_completed", 0) or 0)
+        total_revenue = float(raw.get("revenue", 0) or 0)
+        rider_count = int(raw.get("rider_count", 0) or 0)
+        active_riders = int(raw.get("active_riders", 0) or 0)
+        merchant_count = int(raw.get("merchant_count", 0) or 0)
+        active_merchants = int(raw.get("active_merchants", 0) or 0)
+        target_pct = float(raw.get("target_attainment_pct", 0) or 0)
+        target_orders = int(raw.get("target", 0) or 0)
 
-        total_orders = int(aggregates.get("orders", 0) or 0)
-        total_revenue = float(aggregates.get("revenue", 0) or 0)
-
-        # Hub targets are REVENUE targets (₦), not order counts
-        target_revenue = sum(h["target"] for h in hubs)
-        pct = round(total_revenue / target_revenue * 100, 1) if target_revenue else 0
-
-        # Order-count targets come from individual riders
-        all_riders = [r for h in hubs for r in h.get("riders", [])]
-        target_orders = sum(int(r.get("target_orders", 0) or 0) for r in all_riders)
-
-        lead_pay = sum(h["captain_pay"] for h in hubs)
+        # Determine zone colour from index (fetch zone list for context)
+        # Use a default; frontend can override
+        color_hex = raw.get("color") or _ZONE_COLORS[0]
 
         return Response({
             "zone": {
-                "id": raw.get("id"),
-                "full_name": raw.get("name", ""),
-                "code": code,
-                "lead_name": raw.get("lead_name", ""),
+                "id": pk,
+                "full_name": raw.get("zone_name", raw.get("name", "")),
+                "code": raw.get("code", ""),
+                "lead_name": raw.get("captain", raw.get("lead_name", "")),
                 "color_hex": color_hex,
             },
-            "hubs": hubs,
+            "relay_nodes": relay_nodes_list,
             "total_orders": total_orders,
+            "orders_completed": orders_completed,
             "target_orders": target_orders,
             "total_revenue": total_revenue,
-            "target_revenue": target_revenue,
-            "pct": pct,
-            "lead_pay": lead_pay,
+            "target_pct": target_pct,
+            "rider_count": rider_count,
+            "active_riders": active_riders,
+            "merchant_count": merchant_count,
+            "active_merchants": active_merchants,
+            "avg_delivery_time": raw.get("avg_delivery_time"),
+            "avg_distance_km": raw.get("avg_distance_km"),
         })
 
 
@@ -233,72 +209,50 @@ def _cached_get_zone_detail(zone_id, period):
     return axpress_client.get_zone_detail(zone_id, period)
 
 
-# ── Hubs (was Zones) ────────────────────────────────────────────────────────
+# ── Zone Riders & Merchants ─────────────────────────────────────────────────
 
-class HubDashboardView(APIView):
+class ZoneRidersView(APIView):
     """
-    GET /api/v1/core/hubs/<id>/dashboard/?period=this_month
+    GET /api/v1/core/zones/<id>/riders/?period=this_month
 
-    Hub-level KPIs: orders, revenue, rider/merchant counts, targets.
-    """
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, pk):
-        period = _period(request)
-        try:
-            data = _cached_get_hub_dashboard(pk, period)
-        except AXpressAPIError as exc:
-            return _error_response(exc)
-        return Response(data)
-
-
-@cached_axpress_call("hub_dashboard")
-def _cached_get_hub_dashboard(hub_id, period):
-    return axpress_client.get_hub_dashboard(hub_id, period)
-
-
-class HubRidersView(APIView):
-    """
-    GET /api/v1/core/hubs/<id>/riders/?period=this_month
-
-    All riders in a hub with their performance metrics.
+    All riders in a zone with their performance metrics.
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
         period = _period(request)
         try:
-            data = _cached_get_hub_riders(pk, period)
+            data = _cached_get_zone_riders(pk, period)
         except AXpressAPIError as exc:
             return _error_response(exc)
         return Response(data)
 
 
-@cached_axpress_call("hub_riders")
-def _cached_get_hub_riders(hub_id, period):
-    return axpress_client.get_hub_riders(hub_id, period)
+@cached_axpress_call("zone_riders")
+def _cached_get_zone_riders(zone_id, period):
+    return axpress_client.get_zone_riders(zone_id, period)
 
 
-class HubMerchantsView(APIView):
+class ZoneMerchantsView(APIView):
     """
-    GET /api/v1/core/hubs/<id>/merchants/?period=this_month
+    GET /api/v1/core/zones/<id>/merchants/?period=this_month
 
-    All merchants in a hub with activity status and order metrics.
+    All merchants in a zone with activity status and order metrics.
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
         period = _period(request)
         try:
-            data = _cached_get_hub_merchants(pk, period)
+            data = _cached_get_zone_merchants(pk, period)
         except AXpressAPIError as exc:
             return _error_response(exc)
         return Response(data)
 
 
-@cached_axpress_call("hub_merchants")
-def _cached_get_hub_merchants(hub_id, period):
-    return axpress_client.get_hub_merchants(hub_id, period)
+@cached_axpress_call("zone_merchants")
+def _cached_get_zone_merchants(zone_id, period):
+    return axpress_client.get_zone_merchants(zone_id, period)
 
 
 # ── Relay Nodes ──────────────────────────────────────────────────────────────

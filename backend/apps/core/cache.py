@@ -18,11 +18,10 @@ CACHE_TTL = {
     "rider_locations":  30,      # map view — near real-time
     "rider_performance": 120,    # 2 minutes
     "merchant_analytics": 120,   # 2 minutes
-    "hub_dashboard":    300,     # 5 minutes
-    "zones":            300,     # 5 minutes
-    "zone_detail":      300,
-    "hub_riders":       120,
-    "hub_merchants":    120,
+    "zones":            300,     # 5 minutes — dashboard + zone list
+    "zone_detail":      300,     # zone dashboard
+    "zone_riders":      120,     # 2 minutes
+    "zone_merchants":   120,     # 2 minutes
     "leaderboard":      300,     # 5 minutes
     "order_analytics":  300,
     "relay_nodes":      300,

@@ -22,15 +22,19 @@ All endpoints are under `/api/v1/core/`. The old paths no longer exist.
 
 | Old Endpoint | New Endpoint |
 |-------------|-------------|
-| `GET /core/dashboard/` | `GET /core/dashboard/` (unchanged, but response keys changed — see below) |
+| `GET /core/dashboard/` | `GET /core/dashboard/` (unchanged path, response keys changed — see below) |
 | `GET /core/verticals/` | `GET /core/zones/` |
 | `GET /core/verticals/:id/` | `GET /core/zones/:id/` |
 | `GET /core/verticals/:id/performance/` | `GET /core/zones/:id/performance/` |
-| `GET /core/zones/` | `GET /core/hubs/` |
-| `GET /core/zones/:id/dashboard/` | `GET /core/hubs/:id/dashboard/` |
-| `GET /core/zones/:id/performance/` | `GET /core/hubs/:id/performance/` |
-| `GET /core/zones/:id/riders/` | `GET /core/hubs/:id/riders/` |
-| `GET /core/zones/:id/merchants/` | `GET /core/hubs/:id/merchants/` |
+| `GET /core/zones/:id/riders/` | `GET /core/zones/:id/riders/` (same path, now at zone level) |
+| `GET /core/zones/:id/merchants/` | `GET /core/zones/:id/merchants/` (same path, now at zone level) |
+| `GET /core/hubs/` | `GET /core/hubs/` (dispatch zone list for admin) |
+
+**Removed endpoints** (no longer exist):
+- `GET /core/hubs/:id/dashboard/` — use `GET /core/zones/:id/` instead
+- `GET /core/hubs/:id/performance/` — use `GET /core/zones/:id/performance/` instead
+- `GET /core/hubs/:id/riders/` — use `GET /core/zones/:id/riders/` instead
+- `GET /core/hubs/:id/merchants/` — use `GET /core/zones/:id/merchants/` instead
 
 ### Relay Nodes (NEW)
 
@@ -128,31 +132,37 @@ All endpoints are under `/api/v1/core/`. The old paths no longer exist.
 
 ### Zone Detail (`GET /core/zones/:id/`)
 
-```diff
+```json
 {
--  "vertical": {
-+  "zone": {
-     "id": "...",
-     "full_name": "Island & Lekki Corridor",
-     "code": "A",
-     "lead_name": "Dennis",
-     "color_hex": "#10B981"
-   },
--  "zones": [
-+  "hubs": [
-     {
-       "id": "...",
-       "name": "Osapa/Jakande",
-       "captain": "Emeka Okafor",
-       "orders": 200,
-       "revenue": 800000,
-       "riders": [...],
-       "merchants": [...]
-     }
-   ],
-   "total_orders": ...,
-   "total_revenue": ...,
-   "pct": ...
+  "zone": {
+    "id": "...",
+    "full_name": "Island & Lekki Corridor",
+    "code": "A",
+    "lead_name": "Dennis",
+    "color_hex": "#10B981"
+  },
+  "relay_nodes": [
+    {
+      "id": "...",
+      "name": "Node A",
+      "address": "...",
+      "latitude": 6.45,
+      "longitude": 3.39,
+      "catchment_radius_km": 5.0,
+      "is_active": true
+    }
+  ],
+  "total_orders": 21,
+  "orders_completed": 18,
+  "target_orders": 2000,
+  "total_revenue": 50000,
+  "target_pct": 85.5,
+  "rider_count": 10,
+  "active_riders": 8,
+  "merchant_count": 50,
+  "active_merchants": 35,
+  "avg_delivery_time": 25.3,
+  "avg_distance_km": 4.2
 }
 ```
 

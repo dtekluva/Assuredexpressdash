@@ -4,7 +4,8 @@ OCC core URL routes.
 All endpoints proxy data from the main AXpress backend.
 The comms app has its own urls.py for local communication features.
 
-NAMING: URLs use new business terminology (zones = old verticals, hubs = old zones).
+Hierarchy: Zone (top-level) → Relay Nodes (physical handoff points).
+Riders and merchants belong to zones. Verticals are deprecated.
 """
 from django.urls import path
 
@@ -12,14 +13,13 @@ from .views import (
     DashboardSummaryView,
     ZoneListView,
     ZoneDetailView,
+    ZoneRidersView,
+    ZoneMerchantsView,
     ZoneCRUDListView,
     ZoneCRUDDetailView,
-    HubDashboardView,
     HubListView,
     HubCRUDListView,
     HubCRUDDetailView,
-    HubRidersView,
-    HubMerchantsView,
     HubTargetListView,
     HubTargetDetailView,
     RelayNodeListView,
@@ -45,19 +45,17 @@ urlpatterns = [
     # Dashboard
     path("dashboard/", DashboardSummaryView.as_view(), name="dashboard-summary"),
 
-    # Zones (was Verticals)
+    # Zones (top-level — was Verticals, now powered by /api/occ/leaderboard/zones/)
     path("zones/", ZoneListView.as_view(), name="zone-list"),
     path("zones/<str:pk>/", ZoneDetailView.as_view(), name="zone-detail"),
     path("zones/<str:pk>/performance/", ZoneDetailView.as_view(), name="zone-performance"),  # alias
+    path("zones/<str:pk>/riders/", ZoneRidersView.as_view(), name="zone-riders"),
+    path("zones/<str:pk>/merchants/", ZoneMerchantsView.as_view(), name="zone-merchants"),
 
-    # Hubs (was Zones) — analytics
+    # Hubs (dispatch zones — kept for admin CRUD and listing)
     path("hubs/", HubListView.as_view(), name="hub-list"),
-    path("hubs/<str:pk>/dashboard/", HubDashboardView.as_view(), name="hub-dashboard"),
-    path("hubs/<str:pk>/performance/", HubDashboardView.as_view(), name="hub-performance"),  # alias
-    path("hubs/<str:pk>/riders/", HubRidersView.as_view(), name="hub-riders"),
-    path("hubs/<str:pk>/merchants/", HubMerchantsView.as_view(), name="hub-merchants"),
 
-    # Relay Nodes (physical handoff points)
+    # Relay Nodes (physical handoff points within zones)
     path("relay-nodes/", RelayNodeListView.as_view(), name="relay-node-list"),
     path("relay-nodes/<str:pk>/", RelayNodeDetailView.as_view(), name="relay-node-detail"),
 
